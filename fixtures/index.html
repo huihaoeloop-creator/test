@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Playwright Fixture</title>
+    <style>
+      body { font: 16px system-ui, sans-serif; margin: 2rem; max-width: 32rem; }
+      .error { color: #b3261e; }
+      [hidden] { display: none; }
+    </style>
+  </head>
+  <body>
+    <h1>Sign in</h1>
+    <form id="login" novalidate>
+      <label>Email <input id="email" name="email" type="email" /></label>
+      <label>Password <input id="password" name="password" type="password" /></label>
+      <button type="submit">Sign in</button>
+    </form>
+    <p id="error" class="error" role="alert" hidden></p>
+    <p id="welcome" hidden>Welcome back!</p>
+
+    <script>
+      const form = document.querySelector('#login');
+      const error = document.querySelector('#error');
+      const welcome = document.querySelector('#welcome');
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const email = form.email.value.trim();
+        const password = form.password.value;
+
+        if (!email.includes('@')) {
+          error.textContent = 'Enter a valid email address.';
+          error.hidden = false;
+          return;
+        }
+        if (password.length < 8) {
+          error.textContent = 'Password must be at least 8 characters.';
+          error.hidden = false;
+          return;
+        }
+
+        error.hidden = true;
+        form.hidden = true;
+        welcome.hidden = false;
+      });
+    </script>
+  </body>
+</html>
