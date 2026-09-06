@@ -256,6 +256,7 @@ class DeckBuilder:
         self.layouts = layouts
         self.font = font
         self.geo = Geometry(prs, layouts)
+        self.missing = []
 
     def _slide(self, key):
         return self.prs.slides.add_slide(self.prs.slide_layouts[self.layouts[key]])
@@ -308,6 +309,9 @@ class DeckBuilder:
             for cell, item in zip(grid_cells(box, len(chunk), max_cols=max_cols), chunk):
                 path = Path(item["image"])
                 if not path.exists():
+                    # 页面上留红字占位，同时报到 stderr —— 几十张图时，
+                    # 在命令行看一份缺失清单远比翻 PPT 找红块快。
+                    self.missing.append(str(path))
                     textbox(slide, cell, [f"[缺图] {path.name}"], font=self.font, size=Pt(10),
                             color=RGBColor(0xC0, 0x39, 0x2B))
                     continue
@@ -456,6 +460,12 @@ def build(brief, template, output, layouts, keep_template_slides=False):
 
     if brief.get("sources"):
         deck.sources(brief["sources"])
+
+    if deck.missing:
+        print(f"\n找不到 {len(deck.missing)} 张图（页面上已用红字占位）：", file=sys.stderr)
+        for path in deck.missing:
+            print(f"  - {path}", file=sys.stderr)
+        print("  路径是相对于你运行命令的位置，不是相对 brief.json。\n", file=sys.stderr)
 
     prs.save(output)
     return len(prs.slides)
