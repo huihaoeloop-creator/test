@@ -551,7 +551,14 @@ def main():
     args = parser.parse_args()
 
     if args.sample_brief:
-        print(json.dumps(SAMPLE, ensure_ascii=False, indent=2))
+        text = json.dumps(SAMPLE, ensure_ascii=False, indent=2)
+        if args.output and args.output != "提案.pptx":
+            # 让 Python 自己写文件：PowerShell 的 > 会写成 UTF-16，
+            # Out-File -Encoding utf8 又带 BOM，两者都让 JSON 变得读不了。
+            Path(args.output).write_text(text, encoding="utf-8")
+            print(f"已写出示例 brief：{args.output}")
+        else:
+            print(text)
         return
 
     if not args.brief or not args.template:
@@ -561,7 +568,9 @@ def main():
     if args.layout_map:
         layouts.update(json.loads(args.layout_map))
 
-    brief = json.loads(Path(args.brief).read_text(encoding="utf-8"))
+    # utf-8-sig 而不是 utf-8：Windows 的编辑器和 PowerShell 重定向常带 BOM，
+    # 用 utf-8 读会以 "Expecting value: line 1 column 1" 失败，看不出真正原因。
+    brief = json.loads(Path(args.brief).read_text(encoding="utf-8-sig"))
     n = build(brief, args.template, args.output, layouts, args.keep_template_slides)
     print(f"已生成 {args.output}（{n} 页）")
 
