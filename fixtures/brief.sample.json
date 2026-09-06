@@ -1,0 +1,155 @@
+{
+  "meta": {
+    "project": "Y2K 女装夹克 · 设计提案",
+    "client": "客户 A",
+    "req_id": "REQ-2026-0913",
+    "date": "2026-09-06",
+    "designer": "佘吉"
+  },
+  "brief": {
+    "品类": "女装夹克",
+    "廓形": "Oversized 落肩",
+    "目标客群": "18-25 岁",
+    "价格带": "¥299-459",
+    "季节": "2026 秋冬",
+    "色彩倾向": "冷调金属感 + 一处高饱和",
+    "面料": "涤纶塔夫绸 / 面密度 80-110 gsm",
+    "工艺禁忌": "不接受烫钻、不接受大面积刺绣",
+    "交付日": "2026-09-13"
+  },
+  "inspiration": [
+    {
+      "image": "fixtures/img/ref-01.png",
+      "caption": "A01 · 品牌官网 · 26AW"
+    },
+    {
+      "image": "fixtures/img/ref-02.png",
+      "caption": "A02 · 品牌官网 · 26AW"
+    },
+    {
+      "image": "fixtures/img/ref-03.png",
+      "caption": "A03 · Pinterest"
+    },
+    {
+      "image": "fixtures/img/ref-04.png",
+      "caption": "A04 · Pinterest"
+    },
+    {
+      "image": "fixtures/img/ref-05.png",
+      "caption": "A05 · 趋势报告"
+    },
+    {
+      "image": "fixtures/img/ref-06.png",
+      "caption": "A06 · 趋势报告"
+    }
+  ],
+  "decode": {
+    "palette": [
+      {
+        "name": "钛银",
+        "hex": "#B9BDC2",
+        "tcx": "14-4102 TCX"
+      },
+      {
+        "name": "深海军",
+        "hex": "#1F3A5F",
+        "tcx": "19-4027 TCX"
+      },
+      {
+        "name": "冷雾灰",
+        "hex": "#8A9299",
+        "tcx": "16-3915 TCX"
+      },
+      {
+        "name": "信号橙",
+        "hex": "#D9541E",
+        "tcx": "17-1464 TCX"
+      },
+      {
+        "name": "近黑",
+        "hex": "#16181C",
+        "tcx": "19-4205 TCX"
+      }
+    ],
+    "elements": {
+      "廓形": "Oversized，肩线下落 4-5 cm",
+      "领型": "立领，领高 6 cm",
+      "袖型": "落肩插肩袖，袖口罗纹",
+      "门襟": "双向拉链，拉头加金属挂片",
+      "分割线": "前身横向育克分割",
+      "口袋": "斜插袋 + 左胸贴袋",
+      "下摆": "抽绳收口",
+      "面料肌理": "塔夫绸，哑光金属反射"
+    }
+  },
+  "options": [
+    {
+      "name": "方案 A · 机能冷调",
+      "summary": "强调金属感面料与结构分割，主色钛银配深海军。",
+      "notes": [
+        "主色 14-4102 TCX",
+        "拉链与挂片为唯一亮点"
+      ],
+      "images": [
+        {
+          "image": "fixtures/img/gen-a1.png",
+          "caption": "G-A01"
+        },
+        {
+          "image": "fixtures/img/gen-a2.png",
+          "caption": "G-A02"
+        }
+      ]
+    },
+    {
+      "name": "方案 B · 高饱和撞色",
+      "summary": "以信号橙作块面撞色，弱化分割线。",
+      "notes": [
+        "撞色面积控制在 15% 以内"
+      ],
+      "images": [
+        {
+          "image": "fixtures/img/gen-b1.png",
+          "caption": "G-B01"
+        },
+        {
+          "image": "fixtures/img/gen-b2.png",
+          "caption": "G-B02"
+        }
+      ]
+    }
+  ],
+  "details": [
+    {
+      "image": "fixtures/img/det-01.png",
+      "caption": "领口与拉链头"
+    },
+    {
+      "image": "fixtures/img/det-02.png",
+      "caption": "下摆抽绳"
+    }
+  ],
+  "sources": [
+    {
+      "no": "A01",
+      "brand": "品牌 X",
+      "season": "26AW",
+      "url": "brand-x.com/lookbook",
+      "usage": "仅参考"
+    },
+    {
+      "no": "A03",
+      "brand": "—",
+      "season": "—",
+      "url": "pinterest.com/pin/…",
+      "usage": "仅参考"
+    },
+    {
+      "no": "G-A01",
+      "brand": "Firefly 生成",
+      "season": "—",
+      "url": "本地",
+      "usage": "可交付"
+    }
+  ]
+}
