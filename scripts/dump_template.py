@@ -28,6 +28,7 @@ import zipfile
 
 try:
     from pptx import Presentation
+    from pptx.oxml.ns import qn
     from pptx.util import Emu
 except ImportError:
     sys.exit("请先安装依赖：pip install python-pptx")
@@ -187,11 +188,91 @@ def render(report):
                 print(f"  第 {s['index'] + 1} 页 -> 版式 {s['layout']!r}")
 
 
+def dump_slide(path, index, as_json=False):
+    """导出某一页上每个形状的几何、文字和逐段字体。
+
+    版式清单说明的是「可用的框」，这个说明的是「这页上实际摆了什么」——
+    要复刻一页的版面，需要的是后者。
+    """
+    prs, _ = open_presentation(path)
+    slides = list(prs.slides)
+    if index >= len(slides):
+        sys.exit(f"模板只有 {len(slides)} 页，没有第 {index + 1} 页")
+
+    slide = slides[index]
+    shapes = []
+    for shape in slide.shapes:
+        info = {
+            "name": safe(lambda: shape.name),
+            "kind": safe(lambda: str(shape.shape_type).split(" (")[0]),
+            "left_in": inches(safe(lambda: shape.left)),
+            "top_in": inches(safe(lambda: shape.top)),
+            "width_in": inches(safe(lambda: shape.width)),
+            "height_in": inches(safe(lambda: shape.height)),
+            "placeholder_idx": safe(
+                lambda: shape.placeholder_format.idx if shape.is_placeholder else None
+            ),
+            "runs": [],
+        }
+        if safe(lambda: shape.has_text_frame, fallback=False):
+            for para in shape.text_frame.paragraphs:
+                for run in para.runs:
+                    ea = None
+                    rPr = run._r.find(qn("a:rPr"))
+                    if rPr is not None:
+                        node = rPr.find(qn("a:ea"))
+                        ea = node.get("typeface") if node is not None else None
+                    info["runs"].append({
+                        "text": run.text,
+                        "latin": run.font.name,
+                        "ea": ea,
+                        "size_pt": run.font.size.pt if run.font.size else None,
+                        "bold": run.font.bold,
+                    })
+        shapes.append(info)
+
+    report = {"file": path, "slide": index + 1,
+              "slide_width_in": inches(prs.slide_width),
+              "slide_height_in": inches(prs.slide_height),
+              "shapes": shapes}
+
+    if as_json:
+        print(json.dumps(report, ensure_ascii=False, indent=2, default=str))
+        return
+
+    print(f"文件: {path}")
+    print(f"第 {index + 1} 页　页面 {report['slide_width_in']} x {report['slide_height_in']} in")
+    print(f"共 {len(shapes)} 个形状\n")
+    for i, sh in enumerate(shapes, 1):
+        ph = f"  占位符idx={sh['placeholder_idx']}" if sh["placeholder_idx"] is not None else ""
+        print(f"[{i}] {sh['kind']}  {sh['name']!r}{ph}")
+        print(f"    位置 ({sh['left_in']}, {sh['top_in']})  尺寸 {sh['width_in']} x {sh['height_in']} in")
+        for run in sh["runs"]:
+            font = run["ea"] or run["latin"] or "(继承)"
+            size = f"{run['size_pt']}pt" if run["size_pt"] else "(继承)"
+            print(f"    文字 {run['text']!r}　字体 {font}　字号 {size}"
+                  f"{'　粗体' if run['bold'] else ''}")
+        print()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("template", help=".potx 或 .pptx 路径")
     parser.add_argument("--json", action="store_true", help="输出 JSON")
+    parser.add_argument("--slide", type=int,
+                        help="改为导出指定页上的实际形状（1 起算），而不是版式清单")
     args = parser.parse_args()
+
+    if args.slide:
+        try:
+            dump_slide(args.template, args.slide - 1, as_json=args.json)
+        except SystemExit:
+            raise
+        except Exception:
+            print("导出该页失败，完整报错如下，请把这一整段发回：\n", file=sys.stderr)
+            traceback.print_exc()
+            sys.exit(1)
+        sys.exit(0)
 
     try:
         data = collect(args.template)
