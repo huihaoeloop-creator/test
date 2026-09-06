@@ -67,6 +67,37 @@ localhost bypass does not survive an explicit `--proxy-server`, and
 time when the target is local. Without this a dev server on `127.0.0.1` gets
 routed to the proxy and comes back `405`.
 
+## Driving an AdsPower profile
+
+AdsPower is not one of the browsers Claude Code's `--chrome` integration
+supports, and it launches each profile in its own throwaway user-data-dir, so
+the extension route does not apply. Attach over CDP instead: AdsPower's Local
+API starts a profile and returns a DevTools websocket endpoint that Playwright
+connects to with `chromium.connectOverCDP()`.
+
+Enable the Local API in the AdsPower client, then:
+
+```bash
+export ADSPOWER_API=http://local.adspower.net:50325   # port is configurable
+export ADSPOWER_KEY=<api key from the client>
+export ADSPOWER_USER_ID=<profile id>
+
+node scripts/adspower-run.mjs https://example.com --out out/shot.png
+```
+
+`scripts/lib/adspower.mjs` wraps `browser/start`, `browser/stop` and
+`browser/active`, throttles calls (the Local API is rate limited), and attaches
+to the profile's **existing** context — a fresh context would not carry the
+profile's cookies or fingerprint. Disconnecting leaves the window open;
+`--stop` closes the profile through the API.
+
+Field names follow the Local API docs and have changed between releases —
+check yours: https://localapi-doc-en.adspower.com/
+
+AdsPower also ships an official LocalAPI MCP server, which plugs into Claude
+Code directly (`claude mcp add`) if you would rather have Claude call it than
+run these scripts: https://help.adspower.com/docs/MCP
+
 ## Running inside a sandboxed CI/agent container
 
 Local automation works fully — that covers testing your own app, which is the
