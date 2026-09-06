@@ -151,54 +151,60 @@ def grid_cells(box, count, max_cols=3, gap=Inches(0.16)):
 
 
 def sample_typography(prs, index=1):
-    """从模板的第 index+1 页取字体名与字号。
+    """列出参考页上出现的字体与字号，并挑一个当正文。
 
-    必须在删页之前调用。字号可能继承自版式/母版而没有直接写在 run 上，
-    所以 run 上取不到时再退回扫描幻灯片 XML 里的 defRPr。中文字体在
-    <a:ea>，run.font.name 只读 <a:latin>，两个都要看。
+    必须在删页之前调用。挑选规则是取**最小**的字号：一页上正文几乎总是最小
+    的那一档，而标题、页码等更大或更特殊。参考页若只有标题，挑出来的自然
+    就是标题字号 —— 所以把完整清单打印出来，让人能看见并用 --body-size 覆盖。
+
+    字号可能继承自版式/母版而没写在 run 上，run 上取不到时退回扫描 XML 里的
+    defRPr。中文字体在 <a:ea>，run.font.name 只读 <a:latin>，两个都要看。
     """
     slides = list(prs.slides)
     if index >= len(slides):
-        return {"font": None, "size": None, "source": f"模板没有第 {index + 1} 页"}
+        return {"font": None, "size": None, "found": [],
+                "source": f"模板没有第 {index + 1} 页"}
 
     slide = slides[index]
-    fonts, sizes = [], []
+    fonts, sizes, pairs = [], [], []
 
     for shape in slide.shapes:
         if not shape.has_text_frame:
             continue
         for para in shape.text_frame.paragraphs:
             for run in para.runs:
-                if run.font.name:
-                    fonts.append(run.font.name)
-                if run.font.size:
-                    sizes.append(run.font.size)
+                name = run.font.name
                 rPr = run._r.find(qn("a:rPr"))
                 if rPr is not None:
                     ea = rPr.find(qn("a:ea"))
                     if ea is not None and ea.get("typeface"):
-                        fonts.append(ea.get("typeface"))
+                        name = ea.get("typeface")
+                if name:
+                    fonts.append(name)
+                if run.font.size:
+                    sizes.append(run.font.size)
+                if name or run.font.size:
+                    text = run.text.strip()
+                    pairs.append((name, run.font.size, text[:22]))
 
     if not sizes:
         for node in slide.element.iter(qn("a:defRPr")):
             raw = node.get("sz")
             if raw:
-                sizes.append(Pt(int(raw) / 100))
+                size = Pt(int(raw) / 100)
+                sizes.append(size)
+                pairs.append((None, size, "(继承自版式)"))
     if not fonts:
         for tag in ("a:latin", "a:ea"):
             for node in slide.element.iter(qn(tag)):
                 if node.get("typeface"):
                     fonts.append(node.get("typeface"))
 
-    def most_common(values):
-        return max(set(values), key=values.count) if values else None
-
-    font, size = most_common(fonts), most_common(sizes)
-    if font or size:
-        source = f"模板第 {index + 1} 页"
-    else:
-        source = f"模板第 {index + 1} 页没有可采样的文字"
-    return {"font": font, "size": size, "source": source}
+    font = max(set(fonts), key=fonts.count) if fonts else None
+    size = min(sizes) if sizes else None       # 正文 = 页面上最小的一档
+    source = (f"模板第 {index + 1} 页" if (font or size)
+              else f"模板第 {index + 1} 页没有可采样的文字")
+    return {"font": font, "size": size, "found": pairs, "source": source}
 
 
 def theme_font(prs):
@@ -497,22 +503,28 @@ class DeckBuilder:
 # --------------------------------------------------------------------------
 
 
-def build(brief, template, output, layouts, keep_ends=True, ref_page=1):
+def build(brief, template, output, layouts, keep_ends=True, ref_page=1,
+          font_override=None, body_size=None):
     prs = open_template(template)
 
     # 采样必须在剪页之前 —— 参考页本身就是要被剪掉的那批。
     typo = sample_typography(prs, ref_page)
-    font = typo["font"] or theme_font(prs)
-    print(f"字体：{font or '（未取到，用 PowerPoint 默认）'}　"
-          f"正文字号：{typo['size'].pt if typo['size'] else '（未取到，用 11pt）'}pt　"
-          f"来源：{typo['source']}")
+    font = font_override or typo["font"] or theme_font(prs)
+    size = Pt(body_size) if body_size else typo["size"]
+
+    print(f"参考页：{typo['source']}")
+    for name, sz, text in typo["found"]:
+        print(f"    {name or '(继承)':<18} {sz.pt if sz else '(继承)':>7}pt   {text}")
+    print(f"采用 → 字体 {font or '(PowerPoint 默认)'}　"
+          f"正文字号 {size.pt if size else 11}pt"
+          f"{'（手动指定）' if (font_override or body_size) else '（正文取最小的一档；不对就用 --font / --body-size 覆盖）'}")
 
     # 先记下模板原有的页，内容页生成完之后再动它们。
     originals = list(prs.slides._sldIdLst)
     head = originals[0] if originals and keep_ends else None
     tail = originals[-1] if len(originals) > 1 and keep_ends else None
 
-    deck = DeckBuilder(prs, layouts, font, typo["size"])
+    deck = DeckBuilder(prs, layouts, font, size)
 
     if brief.get("brief") or brief.get("meta"):
         deck.brief_recap(brief.get("brief", {}), brief.get("meta", {}))
@@ -637,6 +649,8 @@ def main():
                         help="连模板首页和尾页一起删掉（默认保留、原样不动）")
     parser.add_argument("--ref-page", type=int, default=2,
                         help="用模板第几页作为字体字号的采样源（默认 2）")
+    parser.add_argument("--font", help="直接指定字体，覆盖采样结果")
+    parser.add_argument("--body-size", type=float, help="直接指定正文字号（pt），覆盖采样结果")
     parser.add_argument("--layout-map", help='版式索引覆盖，如 \'{"section": 4}\'')
     parser.add_argument("--sample-brief", action="store_true", help="打印示例 JSON 后退出")
     args = parser.parse_args()
@@ -663,7 +677,8 @@ def main():
     # 用 utf-8 读会以 "Expecting value: line 1 column 1" 失败，看不出真正原因。
     brief = json.loads(Path(args.brief).read_text(encoding="utf-8-sig"))
     n = build(brief, args.template, args.output, layouts,
-              keep_ends=not args.drop_ends, ref_page=args.ref_page - 1)
+              keep_ends=not args.drop_ends, ref_page=args.ref_page - 1,
+              font_override=args.font, body_size=args.body_size)
     print(f"已生成 {args.output}（{n} 页）")
 
 
