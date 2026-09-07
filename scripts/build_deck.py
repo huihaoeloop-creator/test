@@ -11,6 +11,8 @@
     按坐标铺网格。
   * 网格的边界不写死，而是从版式 [1] 的标题框和内容框读出来，
     这样模板改了边距，生成的页面跟着走。
+  * 推荐页（一款一页、正反两图）复刻模板参考页：两个文本框整段拷贝 XML，
+    只换文字，格式一个字节不改；两张图等比放进模板记下的矩形。
 
 绝不新建版式、绝不改母版 —— 只用现成版式和自己画的形状。
 
@@ -22,6 +24,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import io
 import json
 import math
@@ -34,7 +37,7 @@ try:
     from lxml import etree
     from pptx import Presentation
     from pptx.dml.color import RGBColor
-    from pptx.enum.shapes import MSO_SHAPE
+    from pptx.enum.shapes import MSO_SHAPE, MSO_SHAPE_TYPE
     from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
     from pptx.oxml.ns import qn
     from pptx.util import Emu, Inches, Pt
@@ -316,6 +319,102 @@ def place_contained(slide, image_path, cell, caption=None, font=None, size=Pt(9)
 
 
 # --------------------------------------------------------------------------
+# 推荐页：照抄模板参考页的版面
+# --------------------------------------------------------------------------
+
+
+class ReferencePage:
+    """把模板参考页拆成「两个文本框 + 两个图片框」，供推荐页复刻。
+
+    文本框整段 XML 深拷贝，只替换文字 —— 比照着导出的字号重建更可靠：
+    模板里 "Style: 001" 那个框的字体和字号是继承来的，没有显式值可抄，
+    重建必然猜错，拷贝则原样带过来。
+
+    图片不拷贝，只记下矩形，然后把实际素材等比放进去。
+    """
+
+    def __init__(self, prs, index):
+        slides = list(prs.slides)
+        self.ok = index < len(slides)
+        self.title_el = self.style_el = None
+        self.rects = []
+        if not self.ok:
+            return
+
+        slide = slides[index]
+        self.layout = slide.slide_layout
+
+        texts = []
+        for shape in slide.shapes:
+            if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                self.rects.append((shape.left, shape.top, shape.width, shape.height))
+            elif shape.has_text_frame and shape.text_frame.text.strip():
+                biggest = max(
+                    (run.font.size.pt for para in shape.text_frame.paragraphs
+                     for run in para.runs if run.font.size),
+                    default=0,
+                )
+                texts.append((biggest, shape))
+
+        self.rects.sort(key=lambda r: r[0])          # 从左到右
+
+        for _, shape in texts:
+            if shape.text_frame.text.strip().lower().startswith("style"):
+                self.style_el = shape._element
+        # 标题 = 剩下的里字号最大的那个
+        rest = [(sz, sh) for sz, sh in texts if sh._element is not self.style_el]
+        if rest:
+            self.title_el = max(rest, key=lambda item: item[0])[1]._element
+
+        self.ok = bool(self.rects) and self.title_el is not None
+
+    def describe(self):
+        parts = [f"图片框 {len(self.rects)} 个"]
+        for left, top, width, height in self.rects:
+            parts.append(f"({Emu(left).inches:.2f}, {Emu(top).inches:.2f}) "
+                         f"{Emu(width).inches:.2f}x{Emu(height).inches:.2f}in")
+        parts.append("标题框 有" if self.title_el is not None else "标题框 无")
+        parts.append("Style 框 有" if self.style_el is not None else "Style 框 无")
+        return "　".join(parts)
+
+    def overlap_warning(self):
+        """模板上两个图片框可能相互重叠，满幅照片会互相遮挡。"""
+        if len(self.rects) < 2:
+            return None
+        a, b = self.rects[0], self.rects[1]
+        gap = b[0] - (a[0] + a[2])
+        if gap >= 0:
+            return None
+        return (f"模板上两个图片框重叠 {Emu(-gap).inches:.2f} 英寸。"
+                "白底服装图通常看不出来；若素材是满幅照片，右图会盖住左图，"
+                "这时加 --side-by-side 让两框不重叠。")
+
+
+def clone_textbox(slide, element, text):
+    """深拷贝一个文本框并替换文字，格式原样保留。"""
+    new_el = copy.deepcopy(element)
+    slide.shapes._spTree.append(new_el)
+
+    for shape in slide.shapes:
+        if shape._element is not new_el:
+            continue
+        frame = shape.text_frame
+        first = None
+        for para in list(frame.paragraphs):
+            for run in list(para.runs):
+                if first is None:
+                    first = run          # 留住第一个 run，它带着格式
+                else:
+                    run._r.getparent().remove(run._r)
+        if first is not None:
+            first.text = text
+        else:
+            frame.text = text
+        return shape
+    return None
+
+
+# --------------------------------------------------------------------------
 # 建页
 # --------------------------------------------------------------------------
 
@@ -323,14 +422,17 @@ def place_contained(slide, image_path, cell, caption=None, font=None, size=Pt(9)
 class DeckBuilder:
     """所有生成页的文案一律英文；字体与正文字号取自模板的参考页。"""
 
-    def __init__(self, prs, layouts, font, body_size=None):
+    def __init__(self, prs, layouts, font, body_size=None, title_size=None,
+                 reference=None, side_by_side=False):
         self.prs = prs
         self.layouts = layouts
         self.font = font
-        # 采样不到就退回 11pt —— 保证还能出稿，命令行会说明退回了。
-        self.body = body_size or Pt(11)
+        self.body = body_size or Pt(14)
+        self.title_size = title_size or Pt(20)
         self.caption = Pt(max(7.5, self.body.pt * 0.8))
         self.geo = Geometry(prs, layouts)
+        self.reference = reference
+        self.side_by_side = side_by_side
         self.missing = []
 
     def _slide(self, key):
@@ -339,7 +441,7 @@ class DeckBuilder:
     # -- 节标题 -------------------------------------------------------------
     def section(self, title, note=""):
         slide = self._slide("section")
-        fill_placeholder(slide, 0, [title], self.font)
+        fill_placeholder(slide, 0, [title], self.font, self.title_size)
         if note:
             fill_placeholder(slide, 1, [note], self.font, self.body)
         return slide
@@ -348,7 +450,7 @@ class DeckBuilder:
     def brief_recap(self, brief, meta):
         """模板首页原样保留、不写入，所以项目信息放在这一页顶部。"""
         slide = self._slide("title_content")
-        fill_placeholder(slide, 0, ["Brief Recap"], self.font)
+        fill_placeholder(slide, 0, ["Brief Recap"], self.font, self.title_size)
 
         lines = []
         header = " · ".join(
@@ -369,7 +471,7 @@ class DeckBuilder:
         for page_no, chunk in enumerate(pages, 1):
             slide = self._slide("title_only")
             heading = title if len(pages) == 1 else f"{title} ({page_no}/{len(pages)})"
-            fill_placeholder(slide, 0, [heading], self.font)
+            fill_placeholder(slide, 0, [heading], self.font, self.title_size)
 
             box = self.geo.title_only_body()
             if lead and page_no == 1:
@@ -394,7 +496,7 @@ class DeckBuilder:
     # -- 风格解构（色卡 + 要素）---------------------------------------------
     def decode(self, palette, elements):
         slide = self._slide("title_only")
-        fill_placeholder(slide, 0, ["Style Breakdown"], self.font)
+        fill_placeholder(slide, 0, ["Style Breakdown"], self.font, self.title_size)
 
         left, top, width, height = self.geo.title_only_body()
         swatch_h = Inches(1.55)
@@ -464,10 +566,67 @@ class DeckBuilder:
             lead=lead or None,
         )
 
+    # -- 推荐页（一款一页，正反两图）-----------------------------------------
+    def recommendation(self, item):
+        """复刻模板参考页：两个文本框整段拷贝，两张图放进模板记下的矩形。"""
+        ref = self.reference
+        slide = self.prs.slides.add_slide(ref.layout)
+        # add_slide 会按版式生成空占位符，参考页的内容是自带的，清掉免得重叠。
+        for shape in list(slide.shapes):
+            shape._element.getparent().remove(shape._element)
+
+        rects = list(ref.rects)
+        if self.side_by_side and len(rects) >= 2:
+            rects = self._split_evenly(rects)
+
+        for rect, key in zip(rects, ("front", "back")):
+            path = item.get(key)
+            if not path:
+                continue
+            path = Path(path)
+            if not path.exists():
+                self.missing.append(str(path))
+                textbox(slide, rect, [f"[Missing] {path.name}"], font=self.font,
+                        size=self.caption, color=RGBColor(0xC0, 0x39, 0x2B))
+                continue
+            place_contained(slide, path, rect)
+
+        if ref.title_el is not None:
+            clone_textbox(slide, ref.title_el, item.get("title", "Recommendation"))
+        if ref.style_el is not None:
+            clone_textbox(slide, ref.style_el, f"Style: {item.get('style', '')}".rstrip())
+
+        notes = item.get("notes") or []
+        if notes and ref.style_el is not None:
+            # 备注放在 Style 框右侧同一条带上，不动模板原有的框。
+            style_shape = [sh for sh in slide.shapes
+                           if sh.has_text_frame
+                           and sh.text_frame.text.strip().lower().startswith("style")]
+            if style_shape:
+                sh = style_shape[-1]
+                left = sh.left + sh.width + Inches(0.2)
+                width = self.prs.slide_width - left - Inches(0.5)
+                if width > Inches(1):
+                    textbox(slide, (left, sh.top, width, sh.height),
+                            ["   ".join(notes)], font=self.font, size=self.body)
+        return slide
+
+    @staticmethod
+    def _split_evenly(rects):
+        """把重叠的两个图片框改成左右均分且不重叠，保留原有的上下范围。"""
+        left = min(r[0] for r in rects)
+        right = max(r[0] + r[2] for r in rects)
+        top = min(r[1] for r in rects)
+        bottom = max(r[1] + r[3] for r in rects)
+        gap = Inches(0.2)
+        width = (right - left - gap) // 2
+        height = bottom - top
+        return [(left, top, width, height), (left + width + gap, top, width, height)]
+
     # -- 素材来源与授权 -----------------------------------------------------
     def sources(self, rows):
         slide = self._slide("title_only")
-        fill_placeholder(slide, 0, ["Sources & Licensing"], self.font)
+        fill_placeholder(slide, 0, ["Sources & Licensing"], self.font, self.title_size)
 
         left, top, width, height = self.geo.title_only_body()
         headers = ["No.", "Brand", "Season", "Source", "Usage"]
@@ -504,7 +663,7 @@ class DeckBuilder:
 
 
 def build(brief, template, output, layouts, keep_ends=True, ref_page=1,
-          font_override=None, body_size=None):
+          font_override=None, body_size=None, title_size=20.0, side_by_side=False):
     prs = open_template(template)
 
     # 采样必须在剪页之前 —— 参考页本身就是要被剪掉的那批。
@@ -524,10 +683,24 @@ def build(brief, template, output, layouts, keep_ends=True, ref_page=1,
     head = originals[0] if originals and keep_ends else None
     tail = originals[-1] if len(originals) > 1 and keep_ends else None
 
-    deck = DeckBuilder(prs, layouts, font, size)
+    reference = ReferencePage(prs, ref_page)
+    if brief.get("recommendations"):
+        if reference.ok:
+            print(f"推荐页参考：{reference.describe()}")
+            warning = reference.overlap_warning()
+            if warning and not side_by_side:
+                print(f"  提示：{warning}")
+        else:
+            sys.exit(f"第 {ref_page + 1} 页缺少可复刻的图片框或标题框，"
+                     "无法生成推荐页。用 --ref-page 指定正确的样板页。")
+
+    deck = DeckBuilder(prs, layouts, font, size, Pt(title_size), reference, side_by_side)
 
     if brief.get("brief") or brief.get("meta"):
         deck.brief_recap(brief.get("brief", {}), brief.get("meta", {}))
+
+    for item in brief.get("recommendations", []):
+        deck.recommendation(item)
 
     if brief.get("inspiration"):
         deck.section("Trend Inspiration",
@@ -585,6 +758,14 @@ SAMPLE = {
         "Excluded": "No rhinestones, no large-area embroidery",
         "Due": "2026-09-13",
     },
+    "recommendations": [
+        {"style": "001", "title": "Knitwear Recommendation",
+         "front": "img/001-front.jpg", "back": "img/001-back.jpg",
+         "notes": ["Crew neck, ribbed hem", "12gg fully fashioned"]},
+        {"style": "002", "title": "Knitwear Recommendation",
+         "front": "img/002-front.jpg", "back": "img/002-back.jpg",
+         "notes": ["Half zip, raglan sleeve"]},
+    ],
     "inspiration": [
         {"image": "img/A01.jpg", "caption": "A01 · Brand X · AW26"},
         {"image": "img/A02.jpg", "caption": "A02 · Brand X · AW26"},
@@ -650,7 +831,12 @@ def main():
     parser.add_argument("--ref-page", type=int, default=2,
                         help="用模板第几页作为字体字号的采样源（默认 2）")
     parser.add_argument("--font", help="直接指定字体，覆盖采样结果")
-    parser.add_argument("--body-size", type=float, help="直接指定正文字号（pt），覆盖采样结果")
+    parser.add_argument("--body-size", type=float, default=14.0,
+                        help="正文字号（pt），默认 14")
+    parser.add_argument("--title-size", type=float, default=20.0,
+                        help="生成页的标题字号（pt），默认 20；推荐页照抄模板，不受影响")
+    parser.add_argument("--side-by-side", action="store_true",
+                        help="推荐页两张图改为左右均分不重叠（模板上两框是重叠的）")
     parser.add_argument("--layout-map", help='版式索引覆盖，如 \'{"section": 4}\'')
     parser.add_argument("--sample-brief", action="store_true", help="打印示例 JSON 后退出")
     args = parser.parse_args()
@@ -678,7 +864,8 @@ def main():
     brief = json.loads(Path(args.brief).read_text(encoding="utf-8-sig"))
     n = build(brief, args.template, args.output, layouts,
               keep_ends=not args.drop_ends, ref_page=args.ref_page - 1,
-              font_override=args.font, body_size=args.body_size)
+              font_override=args.font, body_size=args.body_size,
+              title_size=args.title_size, side_by_side=args.side_by_side)
     print(f"已生成 {args.output}（{n} 页）")
 
 
