@@ -10,6 +10,7 @@ PowerPoint 只说"有问题"，不说是什么问题。这个脚本把已知的�
   4. DrawingML 里 <a:rPr> 等的子元素顺序不合 schema
   5. 图片关系指向的媒体文件缺失
   6. XML 里引用的 r:id 在该部件的 .rels 里不存在（深拷贝形状最容易踩）
+  7. 媒体文件的真实格式与扩展名/声明的类型对不上，或 [Content_Types] 没声明
 
 用法：
     python -X utf8 check_pptx.py 测试.pptx
@@ -29,7 +30,7 @@ try:
 except ImportError:
     sys.exit("请先安装依赖：pip install python-pptx")
 
-VERSION = "2026-09-07g"   # 与 build_deck 同步；跑起来会打印，用于确认版本
+VERSION = "2026-09-07i"   # 与 build_deck 同步；跑起来会打印，用于确认版本
 
 A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 P = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
@@ -101,6 +102,9 @@ def check(path):
                         f"{entry} 引用了不存在的关系 {value}"
                         f"（在 <{el.tag.split('}')[1]}> 的 {key.split('}')[1]} 上）")
 
+    # 7. 媒体：真实格式 vs 扩展名 vs [Content_Types] 声明
+    problems.extend(check_media(zf, names))
+
     # 3 & 4. 逐页检查
     for entry in sorted(n for n in names if re.match(r"ppt/slides/slide\d+\.xml$", n)):
         try:
@@ -121,6 +125,69 @@ def check(path):
                 if ranks != sorted(ranks):
                     problems.append(f"{entry} <a:{tag}> 子元素顺序不合法：{seen}")
 
+    return problems
+
+
+# 图片格式的魔数。PowerPoint 按声明的类型去解码，声明与实际不符就解不开，
+# 于是"无法读取部分内容并已将这些内容删除"。
+MAGIC = [
+    (b"\xff\xd8\xff", "jpeg", {"jpg", "jpeg"}),
+    (b"\x89PNG\r\n\x1a\n", "png", {"png"}),
+    (b"GIF87a", "gif", {"gif"}),
+    (b"GIF89a", "gif", {"gif"}),
+    (b"BM", "bmp", {"bmp"}),
+    (b"II*\x00", "tiff", {"tif", "tiff"}),
+    (b"MM\x00*", "tiff", {"tif", "tiff"}),
+]
+
+
+def sniff(blob):
+    if blob[4:12] in (b"ftypheic", b"ftypheix", b"ftyphevc", b"ftypmif1"):
+        return "heic"                      # 苹果设备的默认格式，PowerPoint 不认
+    if blob[:4] == b"RIFF" and blob[8:12] == b"WEBP":
+        return "webp"                      # 旧版 PowerPoint 不认
+    for magic, name, _ in MAGIC:
+        if blob.startswith(magic):
+            return name
+    return None
+
+
+def check_media(zf, names):
+    problems = []
+    media = [n for n in names if n.startswith("ppt/media/")]
+    if not media:
+        return problems
+
+    declared = set()
+    try:
+        ct = etree.fromstring(zf.read("[Content_Types].xml"))
+        for node in ct:
+            ext = node.get("Extension")
+            if ext:
+                declared.add(ext.lower())
+    except (KeyError, etree.XMLSyntaxError):
+        pass
+
+    for entry in media:
+        ext = entry.rsplit(".", 1)[-1].lower() if "." in entry else ""
+        blob = zf.read(entry)[:16]
+        actual = sniff(blob)
+
+        if actual is None:
+            problems.append(f"{entry} 不是可识别的图片格式（前 4 字节 {blob[:4]!r}）")
+            continue
+        if actual in ("heic", "webp"):
+            problems.append(f"{entry} 实为 {actual.upper()} 格式，PowerPoint 不支持嵌入，"
+                            "需先转成 JPG 或 PNG")
+            continue
+
+        allowed = next((exts for _, name, exts in MAGIC if name == actual), set())
+        if ext not in allowed:
+            problems.append(f"{entry} 实际是 {actual.upper()}，但扩展名是 .{ext} —— "
+                            "PowerPoint 会按扩展名解码，解不开就删掉这张图")
+        if ext and ext not in declared:
+            problems.append(f"[Content_Types].xml 没有声明扩展名 .{ext}，"
+                            f"{entry} 无法被识别")
     return problems
 
 
@@ -177,7 +244,7 @@ def main():
     parser.add_argument("--report", action="store_true",
                         help="打印包内结构清单（不含文字内容，可安全粘贴）")
     args = parser.parse_args()
-    print(f"check_pptx 版本 {VERSION}（检查项 1-6）")
+    print(f"check_pptx 版本 {VERSION}（检查项 1-7）")
 
     if args.report:
         for path in args.files:
