@@ -11,10 +11,12 @@ PowerPoint 只说"有问题"，不说是什么问题。这个脚本把已知的�
   5. 图片关系指向的媒体文件缺失
   6. XML 里引用的 r:id 在该部件的 .rels 里不存在（深拷贝形状最容易踩）
   7. 媒体文件的真实格式与扩展名/声明的类型对不上，或 [Content_Types] 没声明
+  8. 形状的宽高为负数或 0（缩放算错时会出现，PowerPoint 直接拒绝）
 
 用法：
     python -X utf8 check_pptx.py 测试.pptx
     python -X utf8 check_pptx.py 测试.pptx --report   # 打印包内清单，供粘贴排查
+    python -X utf8 check_pptx.py 测试.pptx --media    # 逐张图的格式、像素、DPI
 """
 from __future__ import annotations
 
@@ -30,7 +32,7 @@ try:
 except ImportError:
     sys.exit("请先安装依赖：pip install python-pptx")
 
-VERSION = "2026-09-07i"   # 与 build_deck 同步；跑起来会打印，用于确认版本
+VERSION = "2026-09-07j"   # 与 build_deck 同步；跑起来会打印，用于确认版本
 
 A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 P = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
@@ -118,6 +120,14 @@ def check(path):
             if count > 1:
                 problems.append(f"{entry} 形状 id {value} 出现 {count} 次（同页必须唯一）")
 
+        # 8. 非法的宽高。a:ext 的 cx/cy 必须为正；缩放算成 0 或负数时
+        #    python-pptx 照写不误，PowerPoint 则直接判定内容有问题。
+        for ext in root.iter(A + "ext"):
+            for axis in ("cx", "cy"):
+                raw = ext.get(axis)
+                if raw is not None and int(raw) <= 0:
+                    problems.append(f"{entry} 有形状的 {axis}={raw}（宽高必须为正）")
+
         for tag in ("rPr", "defRPr", "endParaRPr"):
             for node in root.iter(A + tag):
                 seen = [c.tag.split("}")[1] for c in node if isinstance(c.tag, str)]
@@ -191,6 +201,48 @@ def check_media(zf, names):
     return problems
 
 
+def image_size(blob):
+    """从原始字节读出像素尺寸与 DPI —— 不依赖 Pillow。"""
+    if blob.startswith(b"\x89PNG"):
+        w = int.from_bytes(blob[16:20], "big")
+        h = int.from_bytes(blob[20:24], "big")
+        return w, h, None
+    if blob.startswith(b"\xff\xd8"):
+        dpi = None
+        if blob[6:10] == b"JFIF" and blob[13] == 1:
+            dpi = int.from_bytes(blob[14:16], "big")
+        i = 2
+        while i < len(blob) - 9:
+            if blob[i] != 0xFF:
+                i += 1
+                continue
+            marker = blob[i + 1]
+            if 0xC0 <= marker <= 0xCF and marker not in (0xC4, 0xC8, 0xCC):
+                h = int.from_bytes(blob[i + 5:i + 7], "big")
+                w = int.from_bytes(blob[i + 7:i + 9], "big")
+                return w, h, dpi
+            if marker in (0xD8, 0xD9) or 0xD0 <= marker <= 0xD7:
+                i += 2
+                continue
+            i += 2 + int.from_bytes(blob[i + 2:i + 4], "big")
+        return None, None, dpi
+    return None, None, None
+
+
+def media_report(path):
+    """逐张图列出格式、字节数、像素尺寸与 DPI。"""
+    zf = zipfile.ZipFile(path)
+    media = sorted(n for n in zf.namelist() if n.startswith("ppt/media/"))
+    print(f"文件 {path}　媒体 {len(media)} 个\n")
+    for entry in media:
+        blob = zf.read(entry)
+        w, h, dpi = image_size(blob)
+        kind = sniff(blob[:16]) or "?"
+        size = f"{w}x{h}px" if w else "尺寸未识别"
+        print(f"  {entry.split('/')[-1]:<16} {kind:<5} {len(blob) / 1024 / 1024:>6.2f}MB"
+              f"  {size:<14} DPI={dpi or '未标注'}")
+
+
 def report(path):
     """打印一份可粘贴的包内清单 —— 用于检查项全过但 PowerPoint 仍报错时。
 
@@ -243,8 +295,15 @@ def main():
     parser.add_argument("files", nargs="+", help="要检查的 .pptx")
     parser.add_argument("--report", action="store_true",
                         help="打印包内结构清单（不含文字内容，可安全粘贴）")
+    parser.add_argument("--media", action="store_true",
+                        help="逐张图列出格式、字节数、像素尺寸与 DPI")
     args = parser.parse_args()
-    print(f"check_pptx 版本 {VERSION}（检查项 1-7）")
+    print(f"check_pptx 版本 {VERSION}（检查项 1-8）")
+
+    if args.media:
+        for path in args.files:
+            media_report(path)
+        return
 
     if args.report:
         for path in args.files:
