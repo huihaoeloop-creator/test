@@ -123,3 +123,28 @@ scripts/scrape.mjs   standalone automation entry point
 scripts/lib/env.mjs  shared proxy-from-environment helper
 tests/               specs
 ```
+
+## Design workflow (佘吉)
+
+Scripts for the design-request pipeline, one per workflow node. Each writes a
+JSON artefact the next node reads, and each stops for human review — nothing
+advances a node on its own.
+
+| Node | Script | In → Out |
+|---|---|---|
+| 00 需求接单 | `scripts/intake.py` | 陈主管的一句话 → `intake.json` / `brief.json` |
+| 01 检索策略 | `scripts/search_plan.py` | `intake.json` → `plan.json` |
+| 07 出 PPT | `scripts/build_deck.py` | `brief.json` + `.potx` 模版 → 交付 PPT |
+| — 诊断 | `scripts/check_pptx.py`, `scripts/dump_template.py` | 查 PPT 结构 / 看模版排版 |
+
+```bash
+python -X utf8 scripts/intake.py intake.json --to-brief brief.json
+python -X utf8 scripts/search_plan.py intake.json --target 40 -o plan.json
+python -X utf8 scripts/build_deck.py brief.json -t 模版.potx -o 交付.pptx
+```
+
+Channel compliance is declared in `search_plan.py`'s `CHANNELS` table, not
+decided at run time: brand sites are internal reference only and must stay
+credited on the Sources page, Pinterest goes through the official API,
+WGSN / Fashion Snoops produce a pick list for a licensed human to export, and
+Instagram is not collected at all.
