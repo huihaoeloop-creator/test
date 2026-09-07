@@ -52,7 +52,7 @@ except ImportError:
 # python-pptx 只接受 "presentation" 主部件类型。.potx 的包结构与 .pptx 完全一致，
 # 只有这一个类型串不同，所以在内存里改写后再加载，磁盘上的模板不动。
 # 每次跑都打出来 —— 这个工具改得频繁，出问题时第一件事是确认跑的是哪一版。
-VERSION = "2026-09-07f"
+VERSION = "2026-09-07g"
 
 MAIN_PART_CT = re.compile(r'ContentType="[^"]*(?:presentationml|ms-powerpoint)[^"]*\.main\+xml"')
 PRESENTATION_CT = (
@@ -340,12 +340,14 @@ class ReferencePage:
         slides = list(prs.slides)
         self.ok = index < len(slides)
         self.title_el = self.style_el = None
+        self.part = None
         self.rects = []
         if not self.ok:
             return
 
         slide = slides[index]
         self.layout = slide.slide_layout
+        self.part = slide.part
 
         texts = []
         for shape in slide.shapes:
@@ -415,12 +417,45 @@ def assign_fresh_ids(spTree, element):
         used.add(next_id)
 
 
-def clone_textbox(slide, element, text):
+R_NS = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+
+
+def remap_relationships(element, source_part, target_part):
+    """把拷贝来的形状里的 r:id 重新指到目标页自己的关系上。
+
+    深拷贝会把 r:id="rId2" 这类引用一起带过来，但那是**源页**的编号；新页上
+    没有对应关系，就成了悬空引用，PowerPoint 打开时要求修复。能在源页解析到
+    的就在目标页重建同样的关系并换成新编号；解析不到的（源页自己就是坏的）
+    只能把这个属性去掉，宁可少个超链接也不要一份打不开的文件。
+    """
+    for node in element.iter():
+        if not isinstance(node.tag, str):
+            continue
+        for key in list(node.attrib):
+            if not key.startswith(R_NS):
+                continue
+            old_id = node.get(key)
+            try:
+                rel = source_part.rels[old_id]
+            except KeyError:
+                del node.attrib[key]
+                continue
+            if rel.is_external:
+                new_id = target_part.relate_to(rel.target_ref, rel.reltype,
+                                               is_external=True)
+            else:
+                new_id = target_part.relate_to(rel.target_part, rel.reltype)
+            node.set(key, new_id)
+
+
+def clone_textbox(slide, element, text, source_part=None):
     """深拷贝一个文本框并替换文字，格式原样保留。"""
     new_el = copy.deepcopy(element)
     spTree = slide.shapes._spTree
     spTree.append(new_el)
     assign_fresh_ids(spTree, new_el)
+    if source_part is not None:
+        remap_relationships(new_el, source_part, slide.part)
 
     for shape in slide.shapes:
         if shape._element is not new_el:
@@ -619,9 +654,10 @@ class DeckBuilder:
             place_contained(slide, path, rect)
 
         if ref.title_el is not None:
-            clone_textbox(slide, ref.title_el, item.get("title", "Recommendation"))
+            clone_textbox(slide, ref.title_el, item.get("title", "Recommendation"), ref.part)
         if ref.style_el is not None:
-            clone_textbox(slide, ref.style_el, f"Style: {item.get('style', '')}".rstrip())
+            clone_textbox(slide, ref.style_el,
+                          f"Style: {item.get('style', '')}".rstrip(), ref.part)
 
         notes = item.get("notes") or []
         if notes and ref.style_el is not None:

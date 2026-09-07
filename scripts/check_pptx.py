@@ -9,6 +9,7 @@ PowerPoint 只说"有问题"，不说是什么问题。这个脚本把已知的�
   3. 同一页里形状 id 重复
   4. DrawingML 里 <a:rPr> 等的子元素顺序不合 schema
   5. 图片关系指向的媒体文件缺失
+  6. XML 里引用的 r:id 在该部件的 .rels 里不存在（深拷贝形状最容易踩）
 
 用法：
     python -X utf8 check_pptx.py 测试.pptx
@@ -71,6 +72,31 @@ def check(path):
             resolved = posixpath.normpath(posixpath.join(base, target))
             if resolved not in names:
                 problems.append(f"{entry} 指向不存在的部件：{target}")
+
+    # 6. XML 里用到的 r:id 必须在该部件自己的 .rels 里有定义
+    R_ATTR = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+    for entry in sorted(n for n in names if re.match(r"ppt/slides/slide\d+\.xml$", n)):
+        rels_entry = posixpath.join(posixpath.dirname(entry), "_rels",
+                                    posixpath.basename(entry) + ".rels")
+        defined = set()
+        if rels_entry in names:
+            try:
+                rels_root = etree.fromstring(zf.read(rels_entry))
+                defined = {rel.get("Id") for rel in rels_root}
+            except etree.XMLSyntaxError:
+                pass
+        try:
+            root = etree.fromstring(zf.read(entry))
+        except etree.XMLSyntaxError:
+            continue
+        for el in root.iter():
+            if not isinstance(el.tag, str):
+                continue
+            for key, value in el.attrib.items():
+                if key.startswith(R_ATTR) and value and value not in defined:
+                    problems.append(
+                        f"{entry} 引用了不存在的关系 {value}"
+                        f"（在 <{el.tag.split('}')[1]}> 的 {key.split('}')[1]} 上）")
 
     # 3 & 4. 逐页检查
     for entry in sorted(n for n in names if re.match(r"ppt/slides/slide\d+\.xml$", n)):
