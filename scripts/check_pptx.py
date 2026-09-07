@@ -32,7 +32,7 @@ try:
 except ImportError:
     sys.exit("请先安装依赖：pip install python-pptx")
 
-VERSION = "2026-09-07j"   # 与 build_deck 同步；跑起来会打印，用于确认版本
+VERSION = "2026-09-07k"   # 与 build_deck 同步；跑起来会打印，用于确认版本
 
 A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 P = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
@@ -120,13 +120,19 @@ def check(path):
             if count > 1:
                 problems.append(f"{entry} 形状 id {value} 出现 {count} 次（同页必须唯一）")
 
-        # 8. 非法的宽高。a:ext 的 cx/cy 必须为正；缩放算成 0 或负数时
-        #    python-pptx 照写不误，PowerPoint 则直接判定内容有问题。
-        for ext in root.iter(A + "ext"):
-            for axis in ("cx", "cy"):
-                raw = ext.get(axis)
-                if raw is not None and int(raw) <= 0:
-                    problems.append(f"{entry} 有形状的 {axis}={raw}（宽高必须为正）")
+        # 8. 非法的宽高。缩放算成 0 或负数时 python-pptx 照写不误，
+        #    PowerPoint 则直接判定内容有问题。
+        #
+        #    只看真实形状（p:spPr / p:xfrm）里的 a:ext。<p:grpSpPr> 里那个
+        #    组变换的 cx/cy 为 0 是 PowerPoint 自己写的标准结构，每个正经
+        #    文件都有，不能当问题报。
+        for holder in list(root.iter(P + "spPr")) + list(root.iter(P + "xfrm")):
+            for ext in holder.iter(A + "ext"):
+                for axis in ("cx", "cy"):
+                    raw = ext.get(axis)
+                    if raw is not None and int(raw) <= 0:
+                        name = "形状"
+                        problems.append(f"{entry} 有{name}的 {axis}={raw}（宽高必须为正）")
 
         for tag in ("rPr", "defRPr", "endParaRPr"):
             for node in root.iter(A + tag):
