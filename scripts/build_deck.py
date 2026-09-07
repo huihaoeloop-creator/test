@@ -390,10 +390,34 @@ class ReferencePage:
                 "这时加 --side-by-side 让两框不重叠。")
 
 
+def assign_fresh_ids(spTree, element):
+    """给刚拷进来的形状换一批未被占用的 id。
+
+    深拷贝会把源形状的 <p:cNvPr id> 一起带过来，而同一页里形状 id 必须唯一。
+    撞了 id 的文件 PowerPoint 打开时会弹「内容有问题，是否修复」。
+    """
+    used = set()
+    for node in spTree.iter(qn("p:cNvPr")):
+        if node is element or element in node.iterancestors():
+            continue
+        raw = node.get("id")
+        if raw and raw.isdigit():
+            used.add(int(raw))
+
+    next_id = 2                       # id=1 归 spTree 自己
+    for node in element.iter(qn("p:cNvPr")):
+        while next_id in used:
+            next_id += 1
+        node.set("id", str(next_id))
+        used.add(next_id)
+
+
 def clone_textbox(slide, element, text):
     """深拷贝一个文本框并替换文字，格式原样保留。"""
     new_el = copy.deepcopy(element)
-    slide.shapes._spTree.append(new_el)
+    spTree = slide.shapes._spTree
+    spTree.append(new_el)
+    assign_fresh_ids(spTree, new_el)
 
     for shape in slide.shapes:
         if shape._element is not new_el:
