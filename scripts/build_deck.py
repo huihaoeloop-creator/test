@@ -52,7 +52,7 @@ except ImportError:
 # python-pptx 只接受 "presentation" 主部件类型。.potx 的包结构与 .pptx 完全一致，
 # 只有这一个类型串不同，所以在内存里改写后再加载，磁盘上的模板不动。
 # 每次跑都打出来 —— 这个工具改得频繁，出问题时第一件事是确认跑的是哪一版。
-VERSION = "2026-09-07g"
+VERSION = "2026-09-07h"
 
 MAIN_PART_CT = re.compile(r'ContentType="[^"]*(?:presentationml|ms-powerpoint)[^"]*\.main\+xml"')
 PRESENTATION_CT = (
@@ -420,15 +420,24 @@ def assign_fresh_ids(spTree, element):
 R_NS = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 
 
-def remap_relationships(element, source_part, target_part):
-    """把拷贝来的形状里的 r:id 重新指到目标页自己的关系上。
+# 拷贝形状时默认丢掉的关系类型。生成页上这些没有意义，而且是最可能让
+# PowerPoint 判定文件有问题的东西 —— 超链接可能指向模板里已被删掉的页，
+# 重建出来就是一条指向不存在内容的关系。--keep-links 可以保留。
+DROPPED_RELTYPES = (
+    "/hyperlink",
+    "/slide",
+)
+
+
+def remap_relationships(element, source_part, target_part, keep_links=False):
+    """处理拷贝来的形状里的 r:id。
 
     深拷贝会把 r:id="rId2" 这类引用一起带过来，但那是**源页**的编号；新页上
-    没有对应关系，就成了悬空引用，PowerPoint 打开时要求修复。能在源页解析到
-    的就在目标页重建同样的关系并换成新编号；解析不到的（源页自己就是坏的）
-    只能把这个属性去掉，宁可少个超链接也不要一份打不开的文件。
+    没有对应关系，就成了悬空引用。默认把超链接和指向幻灯片的关系连同承载它
+    的元素一起删掉：生成页上用不着，而指向模板里已删除页面的链接正是
+    PowerPoint 会判定为「内容有问题」的那类东西。其余关系在目标页重建。
     """
-    for node in element.iter():
+    for node in list(element.iter()):
         if not isinstance(node.tag, str):
             continue
         for key in list(node.attrib):
@@ -440,6 +449,17 @@ def remap_relationships(element, source_part, target_part):
             except KeyError:
                 del node.attrib[key]
                 continue
+
+            drop = not keep_links and any(rel.reltype.endswith(suffix)
+                                          for suffix in DROPPED_RELTYPES)
+            if drop:
+                parent = node.getparent()
+                if parent is not None:
+                    parent.remove(node)      # 连 <a:hlinkClick> 一起去掉
+                else:
+                    del node.attrib[key]
+                break
+
             if rel.is_external:
                 new_id = target_part.relate_to(rel.target_ref, rel.reltype,
                                                is_external=True)
@@ -448,14 +468,14 @@ def remap_relationships(element, source_part, target_part):
             node.set(key, new_id)
 
 
-def clone_textbox(slide, element, text, source_part=None):
+def clone_textbox(slide, element, text, source_part=None, keep_links=False):
     """深拷贝一个文本框并替换文字，格式原样保留。"""
     new_el = copy.deepcopy(element)
     spTree = slide.shapes._spTree
     spTree.append(new_el)
     assign_fresh_ids(spTree, new_el)
     if source_part is not None:
-        remap_relationships(new_el, source_part, slide.part)
+        remap_relationships(new_el, source_part, slide.part, keep_links)
 
     for shape in slide.shapes:
         if shape._element is not new_el:
@@ -485,7 +505,7 @@ class DeckBuilder:
     """所有生成页的文案一律英文；字体与正文字号取自模板的参考页。"""
 
     def __init__(self, prs, layouts, font, body_size=None, title_size=None,
-                 reference=None, side_by_side=False):
+                 reference=None, side_by_side=False, keep_links=False):
         self.prs = prs
         self.layouts = layouts
         self.font = font
@@ -495,6 +515,7 @@ class DeckBuilder:
         self.geo = Geometry(prs, layouts)
         self.reference = reference
         self.side_by_side = side_by_side
+        self.keep_links = keep_links
         self.missing = []
 
     def _slide(self, key):
@@ -654,10 +675,12 @@ class DeckBuilder:
             place_contained(slide, path, rect)
 
         if ref.title_el is not None:
-            clone_textbox(slide, ref.title_el, item.get("title", "Recommendation"), ref.part)
+            clone_textbox(slide, ref.title_el, item.get("title", "Recommendation"),
+                      ref.part, self.keep_links)
         if ref.style_el is not None:
             clone_textbox(slide, ref.style_el,
-                          f"Style: {item.get('style', '')}".rstrip(), ref.part)
+                          f"Style: {item.get('style', '')}".rstrip(),
+                          ref.part, self.keep_links)
 
         notes = item.get("notes") or []
         if notes and ref.style_el is not None:
@@ -726,7 +749,8 @@ class DeckBuilder:
 
 
 def build(brief, template, output, layouts, keep_ends=True, ref_page=1,
-          font_override=None, body_size=None, title_size=20.0, side_by_side=False):
+          font_override=None, body_size=None, title_size=20.0, side_by_side=False,
+          keep_links=False):
     print(f"build_deck 版本 {VERSION}")
     prs = open_template(template)
 
@@ -758,7 +782,8 @@ def build(brief, template, output, layouts, keep_ends=True, ref_page=1,
             sys.exit(f"第 {ref_page + 1} 页缺少可复刻的图片框或标题框，"
                      "无法生成推荐页。用 --ref-page 指定正确的样板页。")
 
-    deck = DeckBuilder(prs, layouts, font, size, Pt(title_size), reference, side_by_side)
+    deck = DeckBuilder(prs, layouts, font, size, Pt(title_size), reference,
+                       side_by_side, keep_links)
 
     if brief.get("brief") or brief.get("meta"):
         deck.brief_recap(brief.get("brief", {}), brief.get("meta", {}))
@@ -968,6 +993,8 @@ def main():
                         help="生成页的标题字号（pt），默认 20；推荐页照抄模板，不受影响")
     parser.add_argument("--side-by-side", action="store_true",
                         help="推荐页两张图改为左右均分不重叠（模板上两框是重叠的）")
+    parser.add_argument("--keep-links", action="store_true",
+                        help="保留模板文本框里的超链接（默认丢弃）")
     parser.add_argument("--layout-map", help='版式索引覆盖，如 \'{"section": 4}\'')
     parser.add_argument("--sample-brief", action="store_true", help="打印示例 JSON 后退出")
     parser.add_argument("--scan-images", metavar="DIR",
@@ -1008,7 +1035,8 @@ def main():
     n = build(brief, args.template, args.output, layouts,
               keep_ends=not args.drop_ends, ref_page=args.ref_page - 1,
               font_override=args.font, body_size=args.body_size,
-              title_size=args.title_size, side_by_side=args.side_by_side)
+              title_size=args.title_size, side_by_side=args.side_by_side,
+              keep_links=args.keep_links)
     print(f"已生成 {args.output}（{n} 页）")
 
 
