@@ -29,6 +29,8 @@ try:
 except ImportError:
     sys.exit("请先安装依赖：pip install python-pptx")
 
+VERSION = "2026-09-07g"   # 与 build_deck 同步；跑起来会打印，用于确认版本
+
 A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 P = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
 R_NS = "{http://schemas.openxmlformats.org/package/2006/relationships}"
@@ -175,6 +177,7 @@ def main():
     parser.add_argument("--report", action="store_true",
                         help="打印包内结构清单（不含文字内容，可安全粘贴）")
     args = parser.parse_args()
+    print(f"check_pptx 版本 {VERSION}（检查项 1-6）")
 
     if args.report:
         for path in args.files:
