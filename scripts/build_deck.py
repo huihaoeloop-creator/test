@@ -51,6 +51,9 @@ except ImportError:
 
 # python-pptx 只接受 "presentation" 主部件类型。.potx 的包结构与 .pptx 完全一致，
 # 只有这一个类型串不同，所以在内存里改写后再加载，磁盘上的模板不动。
+# 每次跑都打出来 —— 这个工具改得频繁，出问题时第一件事是确认跑的是哪一版。
+VERSION = "2026-09-07f"
+
 MAIN_PART_CT = re.compile(r'ContentType="[^"]*(?:presentationml|ms-powerpoint)[^"]*\.main\+xml"')
 PRESENTATION_CT = (
     'ContentType="application/vnd.openxmlformats-officedocument'
@@ -688,6 +691,7 @@ class DeckBuilder:
 
 def build(brief, template, output, layouts, keep_ends=True, ref_page=1,
           font_override=None, body_size=None, title_size=20.0, side_by_side=False):
+    print(f"build_deck 版本 {VERSION}")
     prs = open_template(template)
 
     # 采样必须在剪页之前 —— 参考页本身就是要被剪掉的那批。
@@ -940,6 +944,7 @@ def main():
     args.output_or_none = args.output if args.output != "提案.pptx" else None
 
     if args.scan_images:
+        print(f"build_deck 版本 {VERSION}", file=sys.stderr)
         scan_images(args.scan_images, args.pair, out=args.output_or_none, into=args.into)
         return
 
