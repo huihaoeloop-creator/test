@@ -52,7 +52,7 @@ except ImportError:
 # python-pptx 只接受 "presentation" 主部件类型。.potx 的包结构与 .pptx 完全一致，
 # 只有这一个类型串不同，所以在内存里改写后再加载，磁盘上的模板不动。
 # 每次跑都打出来 —— 这个工具改得频繁，出问题时第一件事是确认跑的是哪一版。
-VERSION = "2026-09-07h"
+VERSION = "2026-09-08a"
 
 MAIN_PART_CT = re.compile(r'ContentType="[^"]*(?:presentationml|ms-powerpoint)[^"]*\.main\+xml"')
 PRESENTATION_CT = (
@@ -293,15 +293,81 @@ def fill_placeholder(slide, idx, lines, font=None, size=None):
 # 图片
 # --------------------------------------------------------------------------
 
+try:
+    from PIL import Image, ImageOps
+    HAVE_PIL = True
+except ImportError:
+    HAVE_PIL = False
 
-def place_contained(slide, image_path, cell, caption=None, font=None, size=Pt(9)):
+# 重编码过的图缓存在这里 —— 同一张图出现在多页时不必重复处理。
+_normalized: dict[tuple[str, int], io.BytesIO] = {}
+
+
+def normalize_image(path, max_px=2000, quality=88):
+    """把图重新编码成干净的基线 JPEG。
+
+    相机和设计软件导出的 JPEG 常带着 EXIF、ICC 配置、CMYK 色彩空间或渐进式
+    编码。python-pptx 只管把字节原样塞进包里，PowerPoint 却可能读不了，于是
+    "无法读取部分内容并已将这些内容删除" —— 整份 PPT 的图全部消失。
+
+    重编码一遍把这些不确定性去掉：转 RGB、按 EXIF 方向摆正、丢掉所有元数据、
+    限制最长边。3000px 的原图放进 8 英寸宽的框里本来也用不上，顺带把文件从
+    十几 MB 降到两三 MB。
+
+    返回可交给 add_picture 的字节流；Pillow 不可用时返回 None，调用方回退到
+    直接使用原文件。
+    """
+    if not HAVE_PIL:
+        return None
+
+    key = (str(path), max_px)
+    if key in _normalized:
+        buf = _normalized[key]
+        buf.seek(0)
+        return buf
+
+    try:
+        with Image.open(path) as img:
+            img = ImageOps.exif_transpose(img)      # 手机照片常靠 EXIF 记录方向
+            if img.mode != "RGB":
+                # CMYK、带透明通道、调色板模式统统转成 RGB，透明处填白。
+                if img.mode in ("RGBA", "LA", "P"):
+                    rgba = img.convert("RGBA")
+                    flat = Image.new("RGB", rgba.size, (255, 255, 255))
+                    flat.paste(rgba, mask=rgba.split()[-1])
+                    img = flat
+                else:
+                    img = img.convert("RGB")
+
+            if max(img.size) > max_px:
+                img.thumbnail((max_px, max_px), Image.LANCZOS)
+
+            buf = io.BytesIO()
+            # 基线（非渐进）JPEG，不带 EXIF、不带 ICC —— 兼容性最好的一档。
+            img.save(buf, format="JPEG", quality=quality, optimize=True,
+                     progressive=False)
+    except Exception as exc:
+        print(f"  重编码 {Path(path).name} 失败（{exc}），改用原文件", file=sys.stderr)
+        return None
+
+    buf.seek(0)
+    _normalized[key] = buf
+    return buf
+
+
+def place_contained(slide, image_path, cell, caption=None, font=None, size=Pt(9),
+                    normalize=True, max_px=2000):
     """把图按原比例缩放后居中放进格子；有 caption 就在下方留一行。"""
     left, top, width, height = cell
     caption_h = Inches(0.26) if caption else 0
     avail_h = height - caption_h
 
-    # 先按原始尺寸插入，读出宽高比，再等比缩放 —— 这样不必依赖 Pillow。
-    pic = slide.shapes.add_picture(str(image_path), left, top)
+    source = normalize_image(image_path, max_px) if normalize else None
+    if source is None:
+        source = str(image_path)
+
+    # 先按原始尺寸插入，读出宽高比，再等比缩放。
+    pic = slide.shapes.add_picture(source, left, top)
     scale = min(width / pic.width, avail_h / pic.height)
     pic.width = int(pic.width * scale)
     pic.height = int(pic.height * scale)
@@ -505,7 +571,8 @@ class DeckBuilder:
     """所有生成页的文案一律英文；字体与正文字号取自模板的参考页。"""
 
     def __init__(self, prs, layouts, font, body_size=None, title_size=None,
-                 reference=None, side_by_side=False, keep_links=False):
+                 reference=None, side_by_side=False, keep_links=False,
+                 normalize=True, max_px=2000):
         self.prs = prs
         self.layouts = layouts
         self.font = font
@@ -516,6 +583,8 @@ class DeckBuilder:
         self.reference = reference
         self.side_by_side = side_by_side
         self.keep_links = keep_links
+        self.normalize = normalize
+        self.max_px = max_px
         self.missing = []
 
     def _slide(self, key):
@@ -572,7 +641,8 @@ class DeckBuilder:
                     textbox(slide, cell, [f"[Missing] {path.name}"], font=self.font, size=self.caption,
                             color=RGBColor(0xC0, 0x39, 0x2B))
                     continue
-                place_contained(slide, path, cell, item.get("caption"), self.font, self.caption)
+                place_contained(slide, path, cell, item.get("caption"), self.font, self.caption,
+                                self.normalize, self.max_px)
             slides.append(slide)
         return slides
 
@@ -672,7 +742,8 @@ class DeckBuilder:
                 textbox(slide, rect, [f"[Missing] {path.name}"], font=self.font,
                         size=self.caption, color=RGBColor(0xC0, 0x39, 0x2B))
                 continue
-            place_contained(slide, path, rect)
+            place_contained(slide, path, rect, normalize=self.normalize,
+                            max_px=self.max_px)
 
         if ref.title_el is not None:
             clone_textbox(slide, ref.title_el, item.get("title", "Recommendation"),
@@ -750,7 +821,7 @@ class DeckBuilder:
 
 def build(brief, template, output, layouts, keep_ends=True, ref_page=1,
           font_override=None, body_size=None, title_size=20.0, side_by_side=False,
-          keep_links=False):
+          keep_links=False, normalize=True, max_px=2000):
     print(f"build_deck 版本 {VERSION}")
     prs = open_template(template)
 
@@ -782,8 +853,10 @@ def build(brief, template, output, layouts, keep_ends=True, ref_page=1,
             sys.exit(f"第 {ref_page + 1} 页缺少可复刻的图片框或标题框，"
                      "无法生成推荐页。用 --ref-page 指定正确的样板页。")
 
+    if normalize and not HAVE_PIL:
+        print("  未安装 Pillow，图片按原样嵌入（pip install Pillow 可开启重编码）")
     deck = DeckBuilder(prs, layouts, font, size, Pt(title_size), reference,
-                       side_by_side, keep_links)
+                       side_by_side, keep_links, normalize and HAVE_PIL, max_px)
 
     if brief.get("brief") or brief.get("meta"):
         deck.brief_recap(brief.get("brief", {}), brief.get("meta", {}))
@@ -995,6 +1068,10 @@ def main():
                         help="推荐页两张图改为左右均分不重叠（模板上两框是重叠的）")
     parser.add_argument("--keep-links", action="store_true",
                         help="保留模板文本框里的超链接（默认丢弃）")
+    parser.add_argument("--no-normalize", action="store_true",
+                        help="不重编码图片，原样嵌入（默认重编码成干净的基线 JPEG）")
+    parser.add_argument("--max-px", type=int, default=2000,
+                        help="重编码后图片最长边的像素上限，默认 2000")
     parser.add_argument("--layout-map", help='版式索引覆盖，如 \'{"section": 4}\'')
     parser.add_argument("--sample-brief", action="store_true", help="打印示例 JSON 后退出")
     parser.add_argument("--scan-images", metavar="DIR",
@@ -1036,7 +1113,8 @@ def main():
               keep_ends=not args.drop_ends, ref_page=args.ref_page - 1,
               font_override=args.font, body_size=args.body_size,
               title_size=args.title_size, side_by_side=args.side_by_side,
-              keep_links=args.keep_links)
+              keep_links=args.keep_links,
+              normalize=not args.no_normalize, max_px=args.max_px)
     print(f"已生成 {args.output}（{n} 页）")
 
 
