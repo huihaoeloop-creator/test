@@ -13,6 +13,7 @@ PowerPoint 只说"有问题"，不说是什么问题。这个脚本把已知的�
 
 用法：
     python -X utf8 check_pptx.py 测试.pptx
+    python -X utf8 check_pptx.py 测试.pptx --report   # 打印包内清单，供粘贴排查
 """
 from __future__ import annotations
 
@@ -121,10 +122,64 @@ def check(path):
     return problems
 
 
+def report(path):
+    """打印一份可粘贴的包内清单 —— 用于检查项全过但 PowerPoint 仍报错时。
+
+    只输出结构信息（部件名、大小、每页形状类型与数量），不含任何文字内容，
+    所以可以安全地贴出来。
+    """
+    zf = zipfile.ZipFile(path)
+    names = zf.namelist()
+
+    print(f"文件 {path}")
+    print(f"部件总数 {len(names)}")
+
+    slides = sorted(
+        (n for n in names if re.match(r"ppt/slides/slide\d+\.xml$", n)),
+        key=lambda n: int(re.search(r"(\d+)", n).group(1)),
+    )
+    media = [n for n in names if n.startswith("ppt/media/")]
+    print(f"幻灯片 {len(slides)} 个：{', '.join(n.split('/')[-1] for n in slides)}")
+    print(f"媒体 {len(media)} 个")
+
+    order = []
+    try:
+        pres = etree.fromstring(zf.read("ppt/presentation.xml"))
+        rels = etree.fromstring(zf.read("ppt/_rels/presentation.xml.rels"))
+        by_id = {r.get("Id"): r.get("Target") for r in rels}
+        R_ATTR = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
+        for sld in pres.iter(P + "sldId"):
+            order.append(by_id.get(sld.get(R_ATTR), "?"))
+        print(f"播放顺序 {len(order)} 页：{', '.join(o.split('/')[-1] for o in order)}")
+    except (KeyError, etree.XMLSyntaxError) as exc:
+        print(f"读取播放顺序失败：{exc}")
+
+    print("\n每页形状：")
+    for entry in slides:
+        root = etree.fromstring(zf.read(entry))
+        kinds = collections.Counter()
+        for tag in ("sp", "pic", "graphicFrame", "grpSp", "cxnSp"):
+            kinds[tag] = len(list(root.iter(P + tag)))
+        rids = {v for el in root.iter() if isinstance(el.tag, str)
+                for k, v in el.attrib.items()
+                if k.startswith("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}")}
+        summary = " ".join(f"{k}={v}" for k, v in kinds.items() if v)
+        size = zf.getinfo(entry).file_size
+        print(f"  {entry.split('/')[-1]:<14} {size:>7}B  {summary}"
+              f"{'  引用=' + ','.join(sorted(rids)) if rids else ''}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="检查 .pptx 结构问题")
     parser.add_argument("files", nargs="+", help="要检查的 .pptx")
+    parser.add_argument("--report", action="store_true",
+                        help="打印包内结构清单（不含文字内容，可安全粘贴）")
     args = parser.parse_args()
+
+    if args.report:
+        for path in args.files:
+            report(path)
+        return
 
     failed = False
     for path in args.files:
