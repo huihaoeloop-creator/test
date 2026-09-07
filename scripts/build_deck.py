@@ -845,6 +845,58 @@ SAMPLE = {
 }
 
 
+IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tif", ".tiff", ".webp"}
+
+
+def scan_images(folder, pair):
+    """扫描文件夹，输出可直接粘进 brief.json 的 recommendations 骨架。
+
+    服装图的文件名常带空格、括号和加号，手抄进 JSON 很容易打错，让脚本
+    照着磁盘上的实际文件名生成。
+    """
+    root = Path(folder)
+    if not root.is_dir():
+        sys.exit(f"找不到文件夹：{folder}")
+
+    files = sorted(
+        (p for p in root.iterdir() if p.suffix.lower() in IMAGE_SUFFIXES),
+        key=lambda p: p.name.lower(),
+    )
+    if not files:
+        sys.exit(f"{folder} 里没有找到图片")
+
+    def rel(path):
+        # brief.json 里的路径是相对运行命令的位置；扫当前目录时去掉 "./"
+        text = path.as_posix()
+        return text[2:] if text.startswith("./") else text
+
+    items = []
+    if pair:
+        for i in range(0, len(files), 2):
+            entry = {
+                "style": f"{i // 2 + 1:03d}",
+                "title": "Knitwear Recommendation",
+                "front": rel(files[i]),
+                "back": rel(files[i + 1]) if i + 1 < len(files) else "",
+                "notes": [],
+            }
+            items.append(entry)
+    else:
+        for i, path in enumerate(files, 1):
+            items.append({
+                "style": f"{i:03d}",
+                "title": "Knitwear Recommendation",
+                "front": rel(path),
+                "back": "",
+                "notes": [],
+            })
+
+    print(f"# 扫到 {len(files)} 张图 → {len(items)} 页推荐页"
+          f"（{'正反配对' if pair else '一图一页'}）", file=sys.stderr)
+    print(f"# 把下面这段替换掉 brief.json 里的 \"recommendations\"", file=sys.stderr)
+    print(json.dumps({"recommendations": items}, ensure_ascii=False, indent=2))
+
+
 def main():
     parser = argparse.ArgumentParser(description="按模板生成设计提案 PPT")
     parser.add_argument("brief", nargs="?", help="内容 JSON")
@@ -863,7 +915,15 @@ def main():
                         help="推荐页两张图改为左右均分不重叠（模板上两框是重叠的）")
     parser.add_argument("--layout-map", help='版式索引覆盖，如 \'{"section": 4}\'')
     parser.add_argument("--sample-brief", action="store_true", help="打印示例 JSON 后退出")
+    parser.add_argument("--scan-images", metavar="DIR",
+                        help="扫描文件夹里的图片，生成 recommendations 骨架后退出")
+    parser.add_argument("--pair", action="store_true",
+                        help="配合 --scan-images：两张一组当正反面（默认一图一页）")
     args = parser.parse_args()
+
+    if args.scan_images:
+        scan_images(args.scan_images, args.pair)
+        return
 
     if args.sample_brief:
         text = json.dumps(SAMPLE, ensure_ascii=False, indent=2)
