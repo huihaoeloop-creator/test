@@ -9,6 +9,29 @@ description: 节点 02 · 按检索方案收图，并给每一张登记出处台
 python -X utf8 scripts/collect.py --plan plan.json --status
 ```
 
+## 目录长什么样
+
+三级：**主管 → 任务 → 节点**。
+
+```
+projects/
+└── 陈主管/                              ← 一级：主管
+    └── REQ-2026-0908-SEED/              ← 二级：任务（一位主管可以有多个）
+        ├── 00-brief/intake.json
+        ├── 01-search/plan.json + picklist-*.md
+        ├── 02-assets/                   ← 三级：节点。素材都在这里
+        │   ├── ledger.json              ← 出处台账
+        │   ├── elevated-everyday/
+        │   │   ├── client/client_a1b2c3d4e5f6.jpg
+        │   │   └── wgsn/wgsn_9dd45ddeb9d9.png
+        │   ├── textural-craft/…
+        │   └── 待归类/                   ← 主管给的图没指方向时落这里
+        └── 07-deck/交付.pptx
+```
+
+目录归属和需求单里的 `requester` 对不上时，`board_data.py` 会报警——
+**目录挪了但单子没改**是最容易出的错。
+
 **这个节点真正的产出是台账，不是图。** 图丢了能重搜；出处丢了，这张图就废了——
 交付 PPT 最后那页 Sources 靠它生成，哪张能进客户交付页、哪张只能内部看，
 也全看台账里的 `channel` / `use` 字段。
@@ -91,6 +114,52 @@ python -X utf8 scripts/collect.py --plan plan.json --pinterest-board 1234567890 
 
 **小红书的笔记图绝不能进任何交付物。** 那是个人创作者的作品，搬运和洗稿的
 法律风险是实的。内部参考可以，出现在给客户的东西里不行。
+
+## 主管打包给佘吉
+
+**约定只有一条：文件夹名就是来源渠道。** 主管按渠道分好文件夹、压成 zip 发过来，
+剩下的佘吉自己做——改名、去重、登记、转格式。
+
+```
+主管给的图.zip
+├── WGSN导出/          ← 文件夹名 = 渠道
+│   ├── 截图1.png       ← 名字随便起，佘吉重新命名
+│   └── 来源.txt        ← 可选，写清楚出处更好
+├── 淘宝 9月/
+└── 小红书笔记/
+```
+
+```
+python -X utf8 scripts/collect.py --plan plan.json --inbox 主管给的图.zip --direction 3
+```
+
+zip 直接收，不用先解压。文件夹名认中文：`WGSN导出`→wgsn、`淘宝 9月`→taobao、
+`小红书笔记`→xiaohongshu、`客户官网`→client。**别让主管去记 taobao 这种代号。**
+
+收进来的图佘吉统一改成 `<渠道>_<内容哈希>.<扩展名>`——主管原来叫什么不重要，
+去重和溯源靠哈希和台账。
+
+`--direction` 不给就全进「待归类」，`--status` 会单列一行提醒有人去归。
+
+## 佘吉交给主管
+
+**给主管的是图片文件，不是链接。** 一张张点链接看效率太低，离线还打不开。
+
+```
+python -X utf8 scripts/collect.py --plan plan.json --handoff 交主管/
+```
+
+```
+交主管/
+├── 01_Elevated-Everyday-精致基础/
+│   ├── 001_client.jpg
+│   └── 002_wgsn.jpg
+├── 03_Textural-Craft-肌理手作/
+└── 台账.csv
+```
+
+目录按方向序号排，主管在文件管理器里按名字排序看到的就是方向顺序，
+用系统看图工具直接翻页。**webp、tif 这些自动转成 JPG**——主管的电脑不一定打得开。
 
 ## 主管交过来的图，怎么标出处
 

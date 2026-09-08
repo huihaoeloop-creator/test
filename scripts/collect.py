@@ -30,13 +30,20 @@ import os
 import re
 import shutil
 import sys
+import zipfile
+
+try:
+    from PIL import Image
+    HAVE_PIL = True
+except ImportError:          # 没装 Pillow 也能跑，只是转不了格式
+    HAVE_PIL = False
 import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-VERSION = "2026-09-08d"
+VERSION = "2026-09-08e"
 
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff", ".bmp"}
 
@@ -54,14 +61,42 @@ USE = {
 }
 
 
+# 主管建的文件夹叫什么，都对到渠道 key 上。他不该记 taobao 这种代号。
+CHANNEL_ALIAS = {
+    "wgsn": "wgsn", "fashionsnoops": "wgsn", "fs": "wgsn", "趋势网站": "wgsn",
+    "淘宝": "taobao", "天猫": "taobao", "taobao": "taobao", "tmall": "taobao",
+    "小红书": "xiaohongshu", "红书": "xiaohongshu", "xhs": "xiaohongshu",
+    "xiaohongshu": "xiaohongshu", "redbook": "xiaohongshu",
+    "pinterest": "pinterest", "pin": "pinterest",
+    "客户官网": "client", "客户": "client", "client": "client",
+    "对标品牌": "brand", "品牌官网": "brand", "brand": "brand", "竞品": "brand",
+}
+
+
+def channel_of(folder_name):
+    """文件夹名 → 渠道 key。对不上就原样返回，后面按"授权没查过"处理。"""
+    key = re.sub(r"[\s_\-—·]+", "", folder_name).lower()
+    for alias, channel in CHANNEL_ALIAS.items():
+        if alias in key:
+            return channel
+    return re.sub(r"[^\w\u4e00-\u9fff]+", "-", folder_name).strip("-").lower() or "unknown"
+
+
 def now():
     return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
 
 
 def slug(text):
-    """「Elevated Everyday　精致基础」→ elevated-everyday"""
+    """「Elevated Everyday　精致基础」→ elevated-everyday
+
+    纯中文的名字（「（待归类）」）没有英文段可取，就清理一下原样用 ——
+    退回一个固定的 "direction" 会让所有中文方向挤进同一个目录。
+    """
     ascii_part = re.sub(r"[^A-Za-z0-9]+", "-", text.split("　")[0]).strip("-").lower()
-    return ascii_part or "direction"
+    if ascii_part:
+        return ascii_part
+    chinese = re.sub(r"[^\w\u4e00-\u9fff]+", "", text)
+    return chinese or "direction"
 
 
 def sha256(path):
@@ -209,6 +244,53 @@ def provenance_level(entry):
 # --------------------------------------------------------------------------
 
 
+def inbox(root, plan, drop, direction, source, ledger):
+    """收主管打包过来的那一坨。
+
+    约定只有一条：**文件夹名就是来源渠道**。主管把图按渠道分好文件夹、
+    压成 zip 发过来，其余的佘吉自己做 —— 改名、去重、登记、分方向。
+    别让主管去记 taobao 这种代号，「淘宝」「小红书」「WGSN」都认。
+
+    方向没法从文件夹名推（主管不按方向分），所以 --direction 给了就用，
+    没给就进「待归类」，--status 会单列一行提醒有人去归。
+    """
+    path = Path(drop)
+    staging = None
+    if path.is_file() and path.suffix.lower() == ".zip":
+        staging = Path(root) / "_解压" / path.stem
+        if staging.exists():
+            shutil.rmtree(staging)
+        staging.mkdir(parents=True)
+        with zipfile.ZipFile(path) as archive:
+            archive.extractall(staging)
+        print(f"解压 {path.name} → {staging}")
+        # zip 里常常只有一层外壳目录，钻进去
+        children = [c for c in staging.iterdir() if not c.name.startswith("__MACOSX")]
+        path = children[0] if len(children) == 1 and children[0].is_dir() else staging
+    elif not path.is_dir():
+        sys.exit(f"给我一个目录或者 .zip：{drop}")
+
+    folders = [c for c in sorted(path.iterdir())
+               if c.is_dir() and not c.name.startswith(("_", "."))]
+    if not folders:
+        sys.exit(f"{path} 下面没有子文件夹。约定是「一个渠道一个文件夹」，"
+                 f"文件夹名就是渠道名（WGSN、淘宝、小红书…）")
+
+    target = direction or {"name": "（待归类）", "quota": 0}
+    total = 0
+    for folder in folders:
+        channel = channel_of(folder.name)
+        print(f"\n[{folder.name}] → 渠道 {channel}")
+        total += ingest(root, plan, folder, channel, target,
+                        source or f"{folder.name}（主管提供）", ledger)
+
+    if staging and staging.exists():
+        shutil.rmtree(staging.parent, ignore_errors=True)
+    if not direction:
+        print("\n这批没指定方向，全进「待归类」。归好之后跑 --status 看还剩多少。")
+    return total
+
+
 def ingest_tree(root, plan, folder, channel, source, ledger):
     """收一棵 brand_collect.mjs 分好方向的目录树。
 
@@ -308,8 +390,8 @@ def ingest(root, plan, folder, channel, direction, source, ledger):
             print("  要逐张的话，在 来源.txt 里按「文件名 = 链接」补几行就行")
         else:
             print("  没有出处。在这个目录里放一个 来源.txt，写两行：")
-            print("      渠道：wgsn")
-            print("      来源：WGSN AW27 Knitwear Key Items")
+            print(f"      渠道：{channel}")
+            print(f"      来源：（这批图是从哪来的，一句话）")
             print("  逐张链接再加「001.jpg = https://...」这样的行")
     return added
 
@@ -437,6 +519,72 @@ def status(plan, ledger):
     print(f"\n合计 {len(items)} 张，其中 {internal} 张仅限内部参考，不得进客户交付页")
 
 
+SAFE = re.compile(r"[^\w\u4e00-\u9fff]+")
+
+
+def handoff(root, plan, ledger, out):
+    """导一份给主管过目的图。
+
+    **给主管的是图片文件，不是链接。** 一张一张点链接看，效率太低，
+    而且离线就打不开。所以这里把图实拷出来，非 JPG/PNG 的转成 JPG ——
+    主管双击就能开，用系统看图工具翻页。
+
+    文件名带方向、渠道和序号，主管在文件管理器里按名字排序，
+    看到的顺序就是方向的顺序。
+    """
+    target = Path(out)
+    target.mkdir(parents=True, exist_ok=True)
+    directions = [d["name"] for d in plan.get("directions", [])]
+    order = {name: i + 1 for i, name in enumerate(directions)}
+
+    counts, converted, missing = {}, 0, 0
+    for item in ledger["items"]:
+        source_file = Path(root) / item["file"]
+        if not source_file.exists():
+            missing += 1
+            continue
+        name = item.get("direction", "（待归类）")
+        index = order.get(name, 99)
+        folder = target / f"{index:02d}_{SAFE.sub('-', name).strip('-')}"
+        folder.mkdir(parents=True, exist_ok=True)
+
+        counts[name] = counts.get(name, 0) + 1
+        stem = f"{counts[name]:03d}_{item.get('channel', '')}"
+        suffix = source_file.suffix.lower()
+
+        if suffix in (".jpg", ".jpeg", ".png"):
+            shutil.copy2(source_file, folder / f"{stem}{'.jpg' if suffix == '.jpeg' else suffix}")
+        elif HAVE_PIL:
+            with Image.open(source_file) as image:
+                if image.mode != "RGB":
+                    image = image.convert("RGB")
+                image.save(folder / f"{stem}.jpg", "JPEG", quality=92)
+            converted += 1
+        else:
+            shutil.copy2(source_file, folder / f"{stem}{suffix}")
+            print(f"  {source_file.name} 不是 JPG/PNG，没装 Pillow 转不了，原样拷过去了")
+
+    export_csv(root, ledger, target / "台账.csv")
+
+    total = sum(counts.values())
+    print(f"\n给主管的图：{target}　共 {total} 张")
+    for name in directions:
+        if counts.get(name):
+            print(f"  {index_label(order, name)} {name}　{counts[name]} 张")
+    for name in sorted(set(counts) - set(directions)):
+        print(f"  99 {name}　{counts[name]} 张　← 待归类")
+    if converted:
+        print(f"  其中 {converted} 张转成了 JPG（原格式主管的电脑不一定打得开）")
+    if missing:
+        print(f"  {missing} 张台账里有、磁盘上没有，跳过了 —— 跑 --check 看是怎么回事")
+    print("  台账.csv 一并放在里面，Excel 直接开")
+    return target
+
+
+def index_label(order, name):
+    return f"{order.get(name, 99):02d}"
+
+
 def export_csv(root, ledger, path):
     """把台账导成 Excel 打得开的表。
 
@@ -517,6 +665,8 @@ def main():
     parser.add_argument("--ingest", metavar="DIR", help="从人工导出的目录收图")
     parser.add_argument("--ingest-tree", metavar="DIR",
                         help="收一棵按方向分好的目录树，子目录名对回方向")
+    parser.add_argument("--inbox", metavar="DIR|ZIP",
+                        help="收主管打包的一坨：子文件夹名就是渠道名")
     parser.add_argument("--channel", default="wgsn", help="来源渠道（brand/wgsn/pinterest）")
     parser.add_argument("--direction", help="方向序号或名字的一段")
     parser.add_argument("--source", help="批次级出处说明，例：WGSN AW27 Knitwear Key Items")
@@ -525,6 +675,8 @@ def main():
     parser.add_argument("--status", action="store_true", help="进度对配额")
     parser.add_argument("--check", action="store_true", help="台账与磁盘对账")
     parser.add_argument("--export-csv", metavar="FILE", help="把台账导成 Excel 能打开的表")
+    parser.add_argument("--handoff", metavar="DIR",
+                        help="导一份给主管过目的图（JPG/PNG 实文件，不是链接）")
     args = parser.parse_args()
 
     print(f"collect 版本 {VERSION}", file=sys.stderr)
@@ -536,6 +688,12 @@ def main():
     ledger = load_ledger(root)
 
     did_work = False
+
+    if args.inbox:
+        direction = direction_of(plan, args.direction) if args.direction else None
+        inbox(root, plan, args.inbox, direction, args.source, ledger)
+        save_ledger(root, ledger)
+        did_work = True
 
     if args.ingest_tree:
         ingest_tree(root, plan, args.ingest_tree, args.channel, args.source, ledger)
@@ -554,6 +712,10 @@ def main():
             pinterest_board(root, args.pinterest_board, direction, ledger, limit)
 
         save_ledger(root, ledger)
+        did_work = True
+
+    if args.handoff:
+        handoff(root, plan, ledger, args.handoff)
         did_work = True
 
     if args.export_csv:

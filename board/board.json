@@ -1,5 +1,5 @@
 {
-  "generated_by": "board_data.py 2026-09-08b",
+  "generated_by": "board_data.py 2026-09-08c",
   "nodes": [
     {
       "n": "00",
@@ -95,6 +95,7 @@
       "requester": "陈主管",
       "date": "2026-08-28",
       "example": true,
+      "path": "projects/陈主管/REQ-2026-0828-CHEN-示例",
       "raw_request": "K 客户上次那批加两个开衫方向，越快越好。",
       "fields": {
         "品类": "女装开衫",
@@ -167,6 +168,7 @@
       "requester": "陈主管",
       "date": "2026-09-08",
       "example": false,
+      "path": "projects/陈主管/REQ-2026-0908-SEED",
       "raw_request": "Seed 女装做一个秋冬的趋势和款式推荐",
       "fields": {
         "品类": "女装毛衣",
@@ -294,6 +296,7 @@
       "requester": "王主管",
       "date": "2026-09-02",
       "example": true,
+      "path": "projects/王主管/REQ-2026-0902-WANG-示例",
       "raw_request": "N 客户要一版男装夹克，机能风，秋冬。",
       "fields": {
         "品类": "男装夹克",
@@ -366,6 +369,7 @@
       "requester": "陈主管",
       "date": "2026-09-06",
       "example": true,
+      "path": "projects/陈主管/REQ-2026-0910-CHEN-示例",
       "raw_request": "P 客户想要春夏的针织背心，学院风那种，月底给。",
       "fields": {
         "品类": "女装针织背心",
@@ -397,6 +401,7 @@
       "requester": "李主管",
       "date": "2026-09-05",
       "example": true,
+      "path": "projects/李主管/REQ-2026-0905-LI-示例",
       "raw_request": "M 客户春夏连衣裙，要度假感，月底前给三个方向。",
       "fields": {
         "品类": "女装连衣裙",

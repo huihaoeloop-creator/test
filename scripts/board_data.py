@@ -20,7 +20,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-VERSION = "2026-09-08b"
+VERSION = "2026-09-08c"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from intake import REQUIRED, is_filled          # noqa: E402  单一事实来源，别抄第二份
@@ -118,6 +118,7 @@ def scan_one(folder):
         "requester": requester,
         "date": meta.get("date", ""),
         "example": bool(intake.get("example")),
+        "path": str(folder).replace("\\", "/"),
         "raw_request": intake.get("raw_request", ""),
         "fields": {k: v for k, v in fields.items() if is_filled(v)},
         "open_questions": intake.get("open_questions", []),
@@ -146,12 +147,26 @@ def main():
 
     print(f"board_data 版本 {VERSION}", file=sys.stderr)
 
+    # 目录是 projects/<主管名>/<任务>/ ——三级，第三级是任务。
+    # 也认旧的两级布局（projects/<任务>/），迁移期间不至于什么都扫不到。
     requests = []
-    for folder in sorted(Path(args.root).iterdir()):
-        if folder.is_dir():
-            one = scan_one(folder)
+    for supervisor in sorted(Path(args.root).iterdir()):
+        if not supervisor.is_dir():
+            continue
+        if (supervisor / "00-brief").is_dir():
+            one = scan_one(supervisor)          # 旧布局：这一层就是任务
             if one:
                 requests.append(one)
+            continue
+        for task in sorted(supervisor.iterdir()):
+            if task.is_dir():
+                one = scan_one(task)
+                if one:
+                    if one["requester"] != supervisor.name:
+                        one["folder_mismatch"] = (
+                            f"目录在「{supervisor.name}」下，但需求单里 requester 是"
+                            f"「{one['requester']}」")
+                    requests.append(one)
 
     # 逾期的排最前，其次按剩余天数；认不出交期的排最后 —— 一位主管挂三张单时，
     # 「先做哪张」是这个视图唯一要回答的问题。
@@ -172,6 +187,8 @@ def main():
         seen[request["req_id"]] = True
         if not request["requester"].strip():
             warnings.append(f"{request['req_id']} 没填 requester，归不到任何主管名下")
+        if request.get("folder_mismatch"):
+            warnings.append(f"{request['req_id']}：{request['folder_mismatch']}")
 
     by_requester = {}
     for request in requests:

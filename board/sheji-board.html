@@ -292,7 +292,8 @@ td:first-child{font-weight:600; white-space:nowrap}
       <li><b>需求和进度是快照。</b>数字来自 <span class="mono">board_data.py</span> 扫 <span class="mono">projects/</span> 的结果——它按<b>产物在不在</b>判断走到哪个节点，不看谁填了什么状态。这页读不到你们机器上的文件，跑完告诉我，我重新发布。</li>
       <li><b>建好的节点会自己进来。</b>每建完一个节点，我重新发布到<b>同一个链接</b>，虚线框变实线，书签不用换。</li>
       <li><b>点头和留言存在页面自己的共享库里</b>，按需求单分开存。多人同时开着都看得到，重新发布也不丢。</li>
-      <li><b>要加一位主管</b>，就是多一张需求单：<span class="mono">intake.py --new</span> 后把 requester 填成他的名字，放进 <span class="mono">projects/</span>，下次扫描自动出现。</li>
+      <li><b>要加一位主管</b>，就是多一张需求单：<span class="mono">intake.py --new --requester 李主管 --tag XXX</span>，放进 <span class="mono">projects/李主管/&lt;req_id&gt;/00-brief/</span>，下次扫描自动出现。</li>
+      <li><b>目录是三级：主管 → 任务 → 节点。</b>素材在 <span class="mono">&lt;任务&gt;/02-assets/&lt;方向&gt;/&lt;渠道&gt;/</span>。主管打包发来的 zip，<b>文件夹名就是渠道名</b>；佘吉交回去的是<b>图片文件，不是链接</b>。</li>
     </ol>
   </div>
 </section>
@@ -306,7 +307,7 @@ td:first-child{font-weight:600; white-space:nowrap}
 
 <script>
 const DATA = {
-  "generated_by": "board_data.py 2026-09-08b",
+  "generated_by": "board_data.py 2026-09-08c",
   "nodes": [
     {
       "n": "00",
@@ -402,6 +403,7 @@ const DATA = {
       "requester": "陈主管",
       "date": "2026-08-28",
       "example": true,
+      "path": "projects/陈主管/REQ-2026-0828-CHEN-示例",
       "raw_request": "K 客户上次那批加两个开衫方向，越快越好。",
       "fields": {
         "品类": "女装开衫",
@@ -474,6 +476,7 @@ const DATA = {
       "requester": "陈主管",
       "date": "2026-09-08",
       "example": false,
+      "path": "projects/陈主管/REQ-2026-0908-SEED",
       "raw_request": "Seed 女装做一个秋冬的趋势和款式推荐",
       "fields": {
         "品类": "女装毛衣",
@@ -601,6 +604,7 @@ const DATA = {
       "requester": "王主管",
       "date": "2026-09-02",
       "example": true,
+      "path": "projects/王主管/REQ-2026-0902-WANG-示例",
       "raw_request": "N 客户要一版男装夹克，机能风，秋冬。",
       "fields": {
         "品类": "男装夹克",
@@ -673,6 +677,7 @@ const DATA = {
       "requester": "陈主管",
       "date": "2026-09-06",
       "example": true,
+      "path": "projects/陈主管/REQ-2026-0910-CHEN-示例",
       "raw_request": "P 客户想要春夏的针织背心，学院风那种，月底给。",
       "fields": {
         "品类": "女装针织背心",
@@ -704,6 +709,7 @@ const DATA = {
       "requester": "李主管",
       "date": "2026-09-05",
       "example": true,
+      "path": "projects/李主管/REQ-2026-0905-LI-示例",
       "raw_request": "M 客户春夏连衣裙，要度假感，月底前给三个方向。",
       "fields": {
         "品类": "女装连衣裙",
