@@ -247,7 +247,7 @@ td:first-child{font-weight:600; white-space:nowrap}
   <div class="stamp">
     <b>快照 2026-09-08</b>
     <span id="hd-count"></span><br>
-    管道 4/9 已建成
+    管道 5/9 已建成
   </div>
 </header>
 
@@ -336,7 +336,7 @@ const DATA = {
     {
       "n": "03",
       "name": "风格解构",
-      "script": null
+      "script": "decompose.py"
     },
     {
       "n": "04",
@@ -368,6 +368,7 @@ const DATA = {
     "00",
     "01",
     "02",
+    "03",
     "07"
   ],
   "requesters": [
@@ -773,7 +774,7 @@ function renderCounts(){
   const text = `${DATA.requests.length} 张单 · ${DATA.requesters.length} 位主管`
              + (gate ? ` · ${gate} 张等点头` : "");
   $("hd-count").textContent = text;
-  $("ft-count").textContent = text + "　管道 4/9 已建成";
+  $("ft-count").textContent = text + "　管道 5/9 已建成";
 }
 
 function renderWho(){
@@ -921,7 +922,7 @@ function renderPipe(){
     "00":["陈主管一句话","intake.json → brief.json"],
     "01":["intake.json","plan.json（中英词表、方向、配额、合规边界）"],
     "02":["plan.json + 图","ledger.json 出处台账 + 分方向素材目录"],
-    "03":["ledger.json","五个方向的风格要素表（廓形／领型／克重／配色）"],
+    "03":["ledger.json + 图","style.json —— 配色和高频词算出来，廓形/克重留给人看图填"],
     "04":["风格要素表","各生图工具的 prompt 组"],
     "05":["prompt 组","生成图（这些才是可交付的图）"],
     "06":["生成图","去背白底图，按 款号_f / 款号_b 命名"],
