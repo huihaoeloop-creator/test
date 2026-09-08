@@ -10,19 +10,64 @@
   "fields": {
     "品类": "女装毛衣",
     "季节": "2027 秋冬",
-    "交付日": "",
-    "廓形": "",
-    "色彩倾向": "",
-    "面料": "",
-    "目标客群": "",
-    "价格带": "",
+    "交付日": "2026-09-08",
+    "廓形": "不设限 —— 陈主管明确不给范围，由佘吉在趋势方向里提",
+    "色彩倾向": "不设限 —— 陈主管明确不给范围，由佘吉在趋势方向里提",
+    "面料": "不设限 —— 陈主管明确不给范围，由佘吉在趋势方向里提",
+    "目标客群": "不设限 —— 陈主管明确不给范围，由佘吉在趋势方向里提",
+    "价格带": "不设限 —— 陈主管明确不给范围，由佘吉在趋势方向里提",
     "工艺禁忌": "",
     "数量": "趋势 5 个方向 × 每方向 4 款 = 20 款",
     "目标品牌": "Seed",
-    "备注": "交付物含两部分：趋势 + 款式推荐。已确认 Seed 指澳洲女装品牌 Seed；本单按「做给 Seed」处理，若实为对标参考请说一声，节点 01 的渠道权重要改"
+    "备注": "交付物含两部分：趋势 + 款式推荐。已确认 Seed 指澳洲女装品牌 Seed，本单按「做给 Seed」处理。WGSN 走人工导出（陈主管提出给账号密码，未采纳，见 01 检索策略）。"
   },
-  "open_questions": [
-    "交付日？A 本周五 09-12　B 下周三 09-16　C 月底 —— 唯一还卡着的必填项",
-    "廓形 / 色彩倾向 / 面料 / 目标客群 / 价格带：这单是趋势推荐，这五项本来该是佘吉的产出。您是要我提方案（回「你来提」），还是您先给方向？"
+  "open_questions": [],
+  "directions_status": "佘吉提案，未经陈主管确认；WGSN 导出后需回头校准",
+  "directions": [
+    {
+      "name": "Elevated Everyday　精致基础",
+      "terms": [
+        "merino",
+        "fine gauge",
+        "tonal",
+        "crew neck"
+      ]
+    },
+    {
+      "name": "Oversized Comfort　宽松舒适",
+      "terms": [
+        "oversized",
+        "drop shoulder",
+        "chunky gauge",
+        "cocoon shape"
+      ]
+    },
+    {
+      "name": "Textural Craft　肌理手作",
+      "terms": [
+        "cable knit",
+        "pointelle",
+        "bobble",
+        "brushed mohair"
+      ]
+    },
+    {
+      "name": "Sporty Layer　运动叠穿",
+      "terms": [
+        "half zip",
+        "funnel neck",
+        "colour blocking",
+        "raglan sleeve"
+      ]
+    },
+    {
+      "name": "Statement Colour　色彩表达",
+      "terms": [
+        "intarsia",
+        "stripe",
+        "argyle",
+        "saturated"
+      ]
+    }
   ]
 }

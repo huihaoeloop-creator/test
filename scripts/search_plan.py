@@ -27,7 +27,7 @@ import re
 import sys
 from pathlib import Path
 
-VERSION = "2026-09-08b"
+VERSION = "2026-09-08d"
 
 # --------------------------------------------------------------------------
 # 渠道表 —— 合规边界写在这里，不在代码逻辑里
@@ -146,8 +146,15 @@ def season_code(text):
     return code
 
 
+# 「不设限」是一个决定，不是一个值 —— 陈主管明确放开的字段，这里不能当
+# 检索词切碎，否则「由佘吉在趋势方向里提」会整句进关键词矩阵。
+NO_CONSTRAINT = re.compile(r"^\s*[（(]?(不设限|不限|无限制|不指定|开放|由佘吉|待提案)")
+
+
 def split_terms(value):
     """一个字段值切成词。「Oversized 落肩 / 收腰」→ [Oversized, 落肩, 收腰]"""
+    if NO_CONSTRAINT.match(str(value or "")):
+        return []
     out = []
     for piece in re.split(r"[、,，/｜|+＋]|\s{2,}", str(value or "")):
         for token in TOKEN.findall(piece):
@@ -226,6 +233,38 @@ def build_keywords(fields):
     }
 
 
+def build_directions(kw, directions, target):
+    """趋势单按方向拆。
+
+    陈主管把廓形色彩都放开时，修饰词是空的，组出来只有一条 `sweater AW27`
+    ——等于没搜。这种单的结构是「N 个趋势方向」，每个方向自带一组词，
+    配额也按方向平摊，这样节点 02 采回来的图天然是分好组的。
+
+    方向由人提（陈主管或佘吉），不是脚本编的；脚本只负责组词和分配额。
+    """
+    if not directions:
+        return []
+    share = target // len(directions)
+    extra = target - share * len(directions)
+    out = []
+    for i, direction in enumerate(directions):
+        terms = direction.get("terms", [])
+        queries = []
+        for core in kw["core"] or ["knitwear"]:
+            for term in terms:
+                q = f"{term} {core} {kw['season']}".strip()
+                if q not in queries:
+                    queries.append(q)
+        out.append({
+            "name": direction.get("name", f"Direction {i + 1}"),
+            "terms": terms,
+            "queries": queries,
+            "directions": directions,
+            "quota": share + (extra if i == 0 else 0),
+        })
+    return out
+
+
 def build_queries(kw, brands, limit=24):
     """主词 × 修饰词 + 季节。品牌单独一组。"""
     queries = []
@@ -276,7 +315,7 @@ def allocate(target, keys=None):
 # --------------------------------------------------------------------------
 
 
-def render(meta, fields, kw, queries, brand_queries, channels, target):
+def render(meta, fields, kw, queries, brand_queries, channels, target, directions=()):
     out = []
     head = " · ".join(str(meta[k]) for k in ("req_id", "client", "project") if meta.get(k))
     out.append("=" * 62)
@@ -293,7 +332,14 @@ def render(meta, fields, kw, queries, brand_queries, channels, target):
     if kw["qualifiers"]:
         out.append(f"  限定词　{'、'.join(kw['qualifiers'])}")
 
-    out.append(f"\n【检索式 {len(queries)} 条】")
+    if directions:
+        out.append(f"\n【趋势方向 {len(directions)} 个】← 方向本身也要陈主管点头")
+        for i, d in enumerate(directions, 1):
+            out.append(f"  {i}. {d['name']}　配额 {d['quota']} 张")
+            for q in d["queries"]:
+                out.append(f"       {q}")
+
+    out.append(f"\n【通用检索式 {len(queries)} 条】")
     for i, q in enumerate(queries, 1):
         out.append(f"  {i:>2}. {q}")
     if brand_queries:
@@ -363,7 +409,8 @@ def main():
             print(q)
         return
 
-    print(render(meta, fields, kw, queries, brand_queries, channels, args.target))
+    directions = build_directions(kw, data.get("directions", []), args.target)
+    print(render(meta, fields, kw, queries, brand_queries, channels, args.target, directions))
 
     if args.output:
         plan = {
@@ -371,6 +418,7 @@ def main():
             "target": args.target,
             "keywords": {k: kw[k] for k in ("core", "modifiers", "qualifiers", "season")},
             "queries": queries,
+            "directions": directions,
             "brand_queries": brand_queries,
             "channels": [
                 {k: c[k] for k in ("key", "name", "mode", "quota", "license", "note")}
@@ -379,9 +427,9 @@ def main():
             "unmapped": [{"字段": f, "词": t} for f, t in kw["unmapped"]],
             "approved": False,
         }
-        Path(args.output).write_text(
-            json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        out = Path(args.output)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"\n已写出 {args.output}　（approved=false，陈主管确认后手改成 true）")
 
 

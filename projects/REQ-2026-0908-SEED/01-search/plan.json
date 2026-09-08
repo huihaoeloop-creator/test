@@ -1,0 +1,363 @@
+{
+  "meta": {
+    "req_id": "REQ-2026-0908-SEED",
+    "project": "Seed 女装 秋冬趋势与款式推荐",
+    "client": "Seed（澳洲女装品牌）",
+    "requester": "陈主管",
+    "date": "2026-09-08",
+    "node": "01-search-plan",
+    "version": "2026-09-08d"
+  },
+  "target": 120,
+  "keywords": {
+    "core": [
+      "womenswear sweater"
+    ],
+    "modifiers": [],
+    "qualifiers": [],
+    "season": "AW27"
+  },
+  "queries": [
+    "womenswear sweater AW27"
+  ],
+  "directions": [
+    {
+      "name": "Elevated Everyday　精致基础",
+      "terms": [
+        "merino",
+        "fine gauge",
+        "tonal",
+        "crew neck"
+      ],
+      "queries": [
+        "merino womenswear sweater AW27",
+        "fine gauge womenswear sweater AW27",
+        "tonal womenswear sweater AW27",
+        "crew neck womenswear sweater AW27"
+      ],
+      "directions": [
+        {
+          "name": "Elevated Everyday　精致基础",
+          "terms": [
+            "merino",
+            "fine gauge",
+            "tonal",
+            "crew neck"
+          ]
+        },
+        {
+          "name": "Oversized Comfort　宽松舒适",
+          "terms": [
+            "oversized",
+            "drop shoulder",
+            "chunky gauge",
+            "cocoon shape"
+          ]
+        },
+        {
+          "name": "Textural Craft　肌理手作",
+          "terms": [
+            "cable knit",
+            "pointelle",
+            "bobble",
+            "brushed mohair"
+          ]
+        },
+        {
+          "name": "Sporty Layer　运动叠穿",
+          "terms": [
+            "half zip",
+            "funnel neck",
+            "colour blocking",
+            "raglan sleeve"
+          ]
+        },
+        {
+          "name": "Statement Colour　色彩表达",
+          "terms": [
+            "intarsia",
+            "stripe",
+            "argyle",
+            "saturated"
+          ]
+        }
+      ],
+      "quota": 24
+    },
+    {
+      "name": "Oversized Comfort　宽松舒适",
+      "terms": [
+        "oversized",
+        "drop shoulder",
+        "chunky gauge",
+        "cocoon shape"
+      ],
+      "queries": [
+        "oversized womenswear sweater AW27",
+        "drop shoulder womenswear sweater AW27",
+        "chunky gauge womenswear sweater AW27",
+        "cocoon shape womenswear sweater AW27"
+      ],
+      "directions": [
+        {
+          "name": "Elevated Everyday　精致基础",
+          "terms": [
+            "merino",
+            "fine gauge",
+            "tonal",
+            "crew neck"
+          ]
+        },
+        {
+          "name": "Oversized Comfort　宽松舒适",
+          "terms": [
+            "oversized",
+            "drop shoulder",
+            "chunky gauge",
+            "cocoon shape"
+          ]
+        },
+        {
+          "name": "Textural Craft　肌理手作",
+          "terms": [
+            "cable knit",
+            "pointelle",
+            "bobble",
+            "brushed mohair"
+          ]
+        },
+        {
+          "name": "Sporty Layer　运动叠穿",
+          "terms": [
+            "half zip",
+            "funnel neck",
+            "colour blocking",
+            "raglan sleeve"
+          ]
+        },
+        {
+          "name": "Statement Colour　色彩表达",
+          "terms": [
+            "intarsia",
+            "stripe",
+            "argyle",
+            "saturated"
+          ]
+        }
+      ],
+      "quota": 24
+    },
+    {
+      "name": "Textural Craft　肌理手作",
+      "terms": [
+        "cable knit",
+        "pointelle",
+        "bobble",
+        "brushed mohair"
+      ],
+      "queries": [
+        "cable knit womenswear sweater AW27",
+        "pointelle womenswear sweater AW27",
+        "bobble womenswear sweater AW27",
+        "brushed mohair womenswear sweater AW27"
+      ],
+      "directions": [
+        {
+          "name": "Elevated Everyday　精致基础",
+          "terms": [
+            "merino",
+            "fine gauge",
+            "tonal",
+            "crew neck"
+          ]
+        },
+        {
+          "name": "Oversized Comfort　宽松舒适",
+          "terms": [
+            "oversized",
+            "drop shoulder",
+            "chunky gauge",
+            "cocoon shape"
+          ]
+        },
+        {
+          "name": "Textural Craft　肌理手作",
+          "terms": [
+            "cable knit",
+            "pointelle",
+            "bobble",
+            "brushed mohair"
+          ]
+        },
+        {
+          "name": "Sporty Layer　运动叠穿",
+          "terms": [
+            "half zip",
+            "funnel neck",
+            "colour blocking",
+            "raglan sleeve"
+          ]
+        },
+        {
+          "name": "Statement Colour　色彩表达",
+          "terms": [
+            "intarsia",
+            "stripe",
+            "argyle",
+            "saturated"
+          ]
+        }
+      ],
+      "quota": 24
+    },
+    {
+      "name": "Sporty Layer　运动叠穿",
+      "terms": [
+        "half zip",
+        "funnel neck",
+        "colour blocking",
+        "raglan sleeve"
+      ],
+      "queries": [
+        "half zip womenswear sweater AW27",
+        "funnel neck womenswear sweater AW27",
+        "colour blocking womenswear sweater AW27",
+        "raglan sleeve womenswear sweater AW27"
+      ],
+      "directions": [
+        {
+          "name": "Elevated Everyday　精致基础",
+          "terms": [
+            "merino",
+            "fine gauge",
+            "tonal",
+            "crew neck"
+          ]
+        },
+        {
+          "name": "Oversized Comfort　宽松舒适",
+          "terms": [
+            "oversized",
+            "drop shoulder",
+            "chunky gauge",
+            "cocoon shape"
+          ]
+        },
+        {
+          "name": "Textural Craft　肌理手作",
+          "terms": [
+            "cable knit",
+            "pointelle",
+            "bobble",
+            "brushed mohair"
+          ]
+        },
+        {
+          "name": "Sporty Layer　运动叠穿",
+          "terms": [
+            "half zip",
+            "funnel neck",
+            "colour blocking",
+            "raglan sleeve"
+          ]
+        },
+        {
+          "name": "Statement Colour　色彩表达",
+          "terms": [
+            "intarsia",
+            "stripe",
+            "argyle",
+            "saturated"
+          ]
+        }
+      ],
+      "quota": 24
+    },
+    {
+      "name": "Statement Colour　色彩表达",
+      "terms": [
+        "intarsia",
+        "stripe",
+        "argyle",
+        "saturated"
+      ],
+      "queries": [
+        "intarsia womenswear sweater AW27",
+        "stripe womenswear sweater AW27",
+        "argyle womenswear sweater AW27",
+        "saturated womenswear sweater AW27"
+      ],
+      "directions": [
+        {
+          "name": "Elevated Everyday　精致基础",
+          "terms": [
+            "merino",
+            "fine gauge",
+            "tonal",
+            "crew neck"
+          ]
+        },
+        {
+          "name": "Oversized Comfort　宽松舒适",
+          "terms": [
+            "oversized",
+            "drop shoulder",
+            "chunky gauge",
+            "cocoon shape"
+          ]
+        },
+        {
+          "name": "Textural Craft　肌理手作",
+          "terms": [
+            "cable knit",
+            "pointelle",
+            "bobble",
+            "brushed mohair"
+          ]
+        },
+        {
+          "name": "Sporty Layer　运动叠穿",
+          "terms": [
+            "half zip",
+            "funnel neck",
+            "colour blocking",
+            "raglan sleeve"
+          ]
+        },
+        {
+          "name": "Statement Colour　色彩表达",
+          "terms": [
+            "intarsia",
+            "stripe",
+            "argyle",
+            "saturated"
+          ]
+        }
+      ],
+      "quota": 24
+    }
+  ],
+  "brand_queries": [
+    "Seed womenswear sweater"
+  ],
+  "channels": [
+    {
+      "key": "brand",
+      "name": "品牌官网",
+      "mode": "auto",
+      "quota": 51,
+      "license": "内部参考",
+      "note": "仅作内部对标。交付 PPT 必须保留 Sources 页并注明品牌，任何情况下不得当作原创款呈现给客户。"
+    },
+    {
+      "key": "pinterest",
+      "name": "Pinterest",
+      "mode": "auto-api",
+      "quota": 69,
+      "license": "官方 API",
+      "note": "只走官方 API，保留 pin 链接与作者署名；不抓网页、不绕登录。"
+    }
+  ],
+  "unmapped": [],
+  "approved": false
+}
