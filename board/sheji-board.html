@@ -247,7 +247,7 @@ td:first-child{font-weight:600; white-space:nowrap}
   <div class="stamp">
     <b>快照 2026-09-08</b>
     <span id="hd-count"></span><br>
-    管道 5/9 已建成
+    管道 6/9 已建成
   </div>
 </header>
 
@@ -341,7 +341,7 @@ const DATA = {
     {
       "n": "04",
       "name": "出图指令",
-      "script": null
+      "script": "prompts.py"
     },
     {
       "n": "05",
@@ -369,6 +369,7 @@ const DATA = {
     "01",
     "02",
     "03",
+    "04",
     "07"
   ],
   "requesters": [
@@ -774,7 +775,7 @@ function renderCounts(){
   const text = `${DATA.requests.length} 张单 · ${DATA.requesters.length} 位主管`
              + (gate ? ` · ${gate} 张等点头` : "");
   $("hd-count").textContent = text;
-  $("ft-count").textContent = text + "　管道 5/9 已建成";
+  $("ft-count").textContent = text + "　管道 6/9 已建成";
 }
 
 function renderWho(){
@@ -923,7 +924,7 @@ function renderPipe(){
     "01":["intake.json","plan.json（中英词表、方向、配额、合规边界）"],
     "02":["plan.json + 图","ledger.json 出处台账 + 分方向素材目录"],
     "03":["ledger.json + 图","style.json —— 配色和高频词算出来，廓形/克重留给人看图填"],
-    "04":["风格要素表","各生图工具的 prompt 组"],
+    "04":["style.json","各工具的 prompt——一款正反两条。MJ 无官方 API，人粘贴；Ideogram 走官方 API"],
     "05":["prompt 组","生成图（这些才是可交付的图）"],
     "06":["生成图","去背白底图，按 款号_f / 款号_b 命名"],
     "07":["brief.json + .potx 模版","可交付 PPT（首末页原样，字体字号取自模版第二页）"],
