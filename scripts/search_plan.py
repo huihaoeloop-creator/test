@@ -27,7 +27,7 @@ import re
 import sys
 from pathlib import Path
 
-VERSION = "2026-09-08e"
+VERSION = "2026-09-08h"
 
 # --------------------------------------------------------------------------
 # 渠道表 —— 合规边界写在这里，不在代码逻辑里
@@ -42,7 +42,8 @@ CHANNELS = [
         "key": "client",
         "name": "客户官网",
         "mode": "auto",
-        "weight": 0.25,
+        "lang": "en",
+        "weight": 0.18,
         "license": "内部参考",
         "note": "客户自己在售的款。用来摸清他们的版型习惯、克重和价位 —— "
                 "这是判断新方向能不能落地的基准。仍然只能内部看，"
@@ -52,7 +53,8 @@ CHANNELS = [
         "key": "brand",
         "name": "对标品牌官网",
         "mode": "auto",
-        "weight": 0.20,
+        "lang": "en",
+        "weight": 0.14,
         "license": "内部参考",
         "note": "竞品在售的款，用来看市场。交付 PPT 必须保留 Sources 页并注明品牌，"
                 "任何情况下不得当作原创款呈现给客户。",
@@ -61,15 +63,41 @@ CHANNELS = [
         "key": "pinterest",
         "name": "Pinterest",
         "mode": "auto-api",
-        "weight": 0.30,
+        "lang": "en",
+        "weight": 0.18,
         "license": "官方 API",
         "note": "只走官方 API，保留 pin 链接与作者署名；不抓网页、不绕登录。",
+    },
+    {
+        "key": "taobao",
+        "name": "淘宝 / 天猫",
+        "mode": "manual",
+        "lang": "zh",
+        "weight": 0.16,
+        "license": "ToS 禁止抓取；商品图版权属卖家",
+        "note": "看的是国内在卖什么、什么价、销量排序靠前的是哪些货型 —— "
+                "市场与供应链信号，不是趋势权威。佘吉只出选品清单（关键词 + 筛选条件 + "
+                "张数），人工在浏览器里选。公司若有淘宝开放平台/联盟 appkey，"
+                "这条可以改成 auto-api，届时改 mode 即可。",
+    },
+    {
+        "key": "xiaohongshu",
+        "name": "小红书",
+        "mode": "manual",
+        "lang": "zh",
+        "weight": 0.16,
+        "license": "ToS 禁止抓取；UGC 版权属创作者",
+        "note": "看的是消费者在穿什么、什么内容有互动 —— 需求端信号。"
+                "笔记图是个人创作者的作品，内部参考尚可，"
+                "**绝不能进任何交付物**，搬运和洗稿的法律风险是实的。"
+                "佘吉只出选品清单，人工浏览。",
     },
     {
         "key": "wgsn",
         "name": "WGSN / Fashion Snoops",
         "mode": "manual",
-        "weight": 0.25,
+        "lang": "en",
+        "weight": 0.18,
         "license": "订阅制，ToS 禁止抓取",
         "note": "佘吉只产出选片清单（栏目路径 + 关键词 + 目标张数），"
                 "由持账号的同事手动导出后放进 02 的素材目录。",
@@ -121,6 +149,11 @@ LEXICON = {
     "提花": "jacquard", "罗纹": "rib knit", "绞花": "cable knit",
     "麻花": "cable knit", "抽针": "pointelle", "镂空": "open work",
     "刺绣": "embroidery", "印花": "print", "褶皱": "pleated",
+    "美利奴": "merino", "细针": "fine gauge", "粗针": "chunky gauge",
+    "半拉链": "half zip", "立领": "funnel neck", "菱格": "argyle",
+    "嵌花": "intarsia", "条纹": "stripe", "同色系": "tonal",
+    "圆领": "crew neck", "落肩袖": "drop shoulder", "茧型": "cocoon shape",
+    "起球": "pilling", "垂坠": "drape",
     "绗缝": "quilted", "做旧": "washed finish", "毛边": "raw edge",
     # 客群 / 定位
     "通勤": "workwear", "街头": "streetwear", "学院": "preppy",
@@ -216,9 +249,14 @@ def build_keywords(fields):
     检索站上真正能出结果的粒度。
     """
     core, modifiers, qualifiers, unmapped = [], [], [], []
+    # 中文平台（淘宝、小红书）要用原词搜，翻成英文在那边什么也搜不到。
+    # 所以译文和原词两份都留着，出选品清单时按渠道的 lang 取。
+    core_cn, modifiers_cn = [], []
 
-    def collect(field_name, bucket):
+    def collect(field_name, bucket, bucket_cn=None):
         for term in split_terms(fields.get(field_name)):
+            if bucket_cn is not None and term not in bucket_cn:
+                bucket_cn.append(term)
             en, ok = translate(term)
             if not ok:
                 unmapped.append((field_name, term))
@@ -226,16 +264,18 @@ def build_keywords(fields):
             if en not in bucket:
                 bucket.append(en)
 
-    collect("品类", core)
+    collect("品类", core, core_cn)
     for name in ("廓形", "面料"):
-        collect(name, modifiers)
-    collect("色彩倾向", modifiers)
+        collect(name, modifiers, modifiers_cn)
+    collect("色彩倾向", modifiers, modifiers_cn)
     for name in ("目标客群",):
         collect(name, qualifiers)
 
     season = season_code(fields.get("季节"))
     return {
         "core": core,
+        "core_cn": core_cn,
+        "modifiers_cn": modifiers_cn,
         "modifiers": modifiers,
         "qualifiers": qualifiers,
         "season": season,
@@ -299,6 +339,126 @@ def build_queries(kw, brands, limit=24):
 # --------------------------------------------------------------------------
 # 配额
 # --------------------------------------------------------------------------
+
+
+# 英文 → 中文反查。一个英文词可能有多个中文说法（cable knit ↔ 绞花/麻花），
+# 都留着 —— 中文电商搜索对同义词很敏感，搜「绞花」和搜「麻花」出来的货不一样。
+REVERSE = {}
+for _cn, _en in LEXICON.items():
+    REVERSE.setdefault(_en, []).append(_cn)
+
+
+def queries_cn(kw, directions):
+    """中文平台的检索词。
+
+    中文电商搜索吃的是短词组，「AW27」这种季节代码在淘宝上搜不出东西，
+    换成「2027秋冬」也不如直接搜品类 + 特征 —— 季节靠上架时间筛，不靠词。
+    """
+    head = (kw["core_cn"] or ["毛衣"])[0]
+    out, no_chinese = [], []
+
+    for core in kw["core_cn"] or ["毛衣"]:
+        if core not in out:
+            out.append(core)
+        for term in kw["modifiers_cn"]:
+            combo = f"{term}{core}"
+            if combo not in out:
+                out.append(combo)
+
+    # 方向的检索词是英文（给 Pinterest / WGSN 用的），这里必须反查回中文。
+    # 查不到的**不放英文进去** —— 在淘宝搜 "pointelle" 什么也搜不出来，
+    # 放进清单只会让人白试一轮。列到末尾请人自己判断。
+    for direction in directions:
+        for term in direction.get("terms", []):
+            words = REVERSE.get(term)
+            if not words:
+                if term not in no_chinese:
+                    no_chinese.append(term)
+                continue
+            for word in words:
+                combo = f"{word}{head}"
+                if combo not in out:
+                    out.append(combo)
+    return out, no_chinese
+
+
+CHANNEL_HINTS = {
+    "taobao": [
+        "按「销量」排序看什么好卖，按「新品」排序看什么刚上",
+        "价格带筛到需求单给的区间，超出的不看 —— 不同价位的款型逻辑不一样",
+        "记下：商品标题、价格、月销、店铺名、商品链接",
+        "商品图版权属卖家，只作内部市场参考，不进任何交付物",
+    ],
+    "xiaohongshu": [
+        "看笔记的互动量（赞藏评），高互动的说明需求端认这个点",
+        "同时记下评论区在问什么 —— 「显胖吗」「起球吗」这类是真实痛点",
+        "记下：笔记标题、作者、发布时间、互动量、笔记链接",
+        "笔记图是个人创作者的作品，**绝不能进任何交付物**，搬运和洗稿的法律风险是实的",
+    ],
+    "wgsn": [
+        "筛 Southern Hemisphere / Australia —— 站内默认北半球口径",
+        "记下：报告名 + 发布日期、栏目路径、图片 ID 或页面 URL",
+        "只作方向和克重的校准，不当素材用",
+    ],
+}
+
+
+def write_picklists(folder, meta, kw, channels, directions, target):
+    """给每个 manual 渠道出一份选品清单。
+
+    手动渠道的配额是**排给人的任务**，不是佘吉的任务。清单要具体到他打开
+    浏览器就能照着做，不用回来问。
+    """
+    root = Path(folder)
+    root.mkdir(parents=True, exist_ok=True)
+    written = []
+
+    for channel in channels:
+        if channel["mode"] != "manual":
+            continue
+        zh = channel.get("lang") == "zh"
+        terms, no_chinese = queries_cn(kw, directions) if zh else (None, [])
+
+        lines = [f"# {channel['name']} 选品清单",
+                 f"**{meta.get('req_id', '')} · {meta.get('project', '')}**", "",
+                 f"给做这件事的同事。佘吉不登录、不抓取——目标 **{channel['quota']} 张**，",
+                 f"收完放进 `02-assets/` 对应方向的目录，再跑 collect.py 收进台账。", "",
+                 f"> **{channel['license']}**", "",
+                 f"{channel['note']}", "", "## 搜什么", ""]
+
+        if zh:
+            lines.append("中文平台用中文搜，英文检索式在这边搜不出东西。")
+            lines.append("")
+            for term in terms[:24]:
+                lines.append(f"- `{term}`")
+            if no_chinese:
+                lines += ["", "**这几个方向词没有对应中文，词表里查不到 —— 我不编：**", ""]
+                for term in no_chinese:
+                    lines.append(f"- `{term}`　你按理解换个说法搜，"
+                                 f"确认后加进 search_plan.py 的 LEXICON，下次自动有")
+        else:
+            lines.append("按方向分，每个方向的额度均摊：")
+            lines.append("")
+            for direction in directions:
+                share = max(1, channel["quota"] // max(1, len(directions)))
+                lines.append(f"### {direction['name']}　约 {share} 张")
+                for query in direction["queries"][:4]:
+                    lines.append(f"- `{query}`")
+                lines.append("")
+
+        lines += ["", "## 怎么挑", ""]
+        for hint in CHANNEL_HINTS.get(channel["key"], ["记下每张图的来源链接和作者"]):
+            lines.append(f"- {hint}")
+        lines += ["", "## 出处怎么记", "",
+                  "在导出目录放一份 `sources.csv`，**逐张**登记：", "",
+                  "```csv", "filename,source_url,author,note",
+                  "001.jpg,<链接>,<作者或店铺>,<标题>", "```", "",
+                  "没有它，出处只记到批次级别，Sources 页写不出单张来源。"]
+
+        path = root / f"picklist-{channel['key']}.md"
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        written.append(path)
+    return written
 
 
 def allocate(target, keys=None):
@@ -390,6 +550,7 @@ def main():
     parser.add_argument("--limit", type=int, default=24, help="检索式条数上限")
     parser.add_argument("-o", "--output", help="写出 plan.json，供节点 02 读取")
     parser.add_argument("--queries", action="store_true", help="只打检索式，一行一条")
+    parser.add_argument("--picklists", metavar="DIR", help="给每个人工渠道出一份选品清单")
     parser.add_argument("--lexicon", action="store_true", help="打印词表后退出")
     args = parser.parse_args()
 
@@ -441,6 +602,13 @@ def main():
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"\n已写出 {args.output}　（approved=false，陈主管确认后手改成 true）")
+
+    if args.picklists:
+        written = write_picklists(args.picklists, meta, kw, channels, directions, args.target)
+        for path in written:
+            print(f"选品清单：{path}")
+        if not written:
+            print("没有人工渠道，不用出选品清单")
 
 
 if __name__ == "__main__":

@@ -46,6 +46,8 @@ USE = {
     "brand":     "internal",   # 对标品牌官网：只能内部对标，不进客户交付页
     "wgsn":      "internal",   # 订阅站：同上，且不得外传
     "pinterest": "internal",   # 需保留作者署名
+    "taobao":    "internal",   # 商品图版权属卖家，只作市场参考
+    "xiaohongshu": "internal", # UGC 版权属创作者，绝不能进任何交付物
     "generated": "deliverable" # 节点 05 自己生成的，才是能交付的
 }
 

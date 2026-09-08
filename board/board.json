@@ -252,25 +252,37 @@
         {
           "name": "客户官网",
           "mode": "auto",
-          "quota": 30,
+          "quota": 24,
           "license": "内部参考"
         },
         {
           "name": "对标品牌官网",
           "mode": "auto",
-          "quota": 24,
+          "quota": 16,
           "license": "内部参考"
         },
         {
           "name": "Pinterest",
           "mode": "auto-api",
-          "quota": 36,
+          "quota": 21,
           "license": "官方 API"
+        },
+        {
+          "name": "淘宝 / 天猫",
+          "mode": "manual",
+          "quota": 19,
+          "license": "ToS 禁止抓取；商品图版权属卖家"
+        },
+        {
+          "name": "小红书",
+          "mode": "manual",
+          "quota": 19,
+          "license": "ToS 禁止抓取；UGC 版权属创作者"
         },
         {
           "name": "WGSN / Fashion Snoops",
           "mode": "manual",
-          "quota": 30,
+          "quota": 21,
           "license": "订阅制，ToS 禁止抓取"
         }
       ]

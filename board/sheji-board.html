@@ -271,6 +271,12 @@ td:first-child{font-weight:600; white-space:nowrap}
         <td>竞品在售的款。Sources 页必须注明品牌，<b>绝不能当原创款给客户</b></td></tr>
       <tr><td>Pinterest</td><td>只走官方 API</td>
         <td>官方 API 无全站搜索——人先在画板选片，脚本再拉画板。保留 pin 链接与作者</td></tr>
+      <tr><td>淘宝 / 天猫</td><td>只出选品清单</td>
+        <td>ToS 禁止抓取，商品图版权属卖家。看市场与供应链——什么货型现成、什么价位好卖。
+        清单用<b>中文</b>检索词</td></tr>
+      <tr><td>小红书</td><td>只出选品清单</td>
+        <td>ToS 禁止抓取，UGC 版权属创作者。看需求端——什么内容有互动、评论区问什么。
+        <b>笔记图绝不能进任何交付物</b></td></tr>
       <tr><td>WGSN / Fashion Snoops</td><td>只出选片清单</td>
         <td>订阅制且 ToS 禁止抓取。<b>不接受账号密码</b>，由持证同事手动导出</td></tr>
       <tr><td>Instagram</td><td>不采集</td>
@@ -553,25 +559,37 @@ const DATA = {
         {
           "name": "客户官网",
           "mode": "auto",
-          "quota": 30,
+          "quota": 24,
           "license": "内部参考"
         },
         {
           "name": "对标品牌官网",
           "mode": "auto",
-          "quota": 24,
+          "quota": 16,
           "license": "内部参考"
         },
         {
           "name": "Pinterest",
           "mode": "auto-api",
-          "quota": 36,
+          "quota": 21,
           "license": "官方 API"
+        },
+        {
+          "name": "淘宝 / 天猫",
+          "mode": "manual",
+          "quota": 19,
+          "license": "ToS 禁止抓取；商品图版权属卖家"
+        },
+        {
+          "name": "小红书",
+          "mode": "manual",
+          "quota": 19,
+          "license": "ToS 禁止抓取；UGC 版权属创作者"
         },
         {
           "name": "WGSN / Fashion Snoops",
           "mode": "manual",
-          "quota": 30,
+          "quota": 21,
           "license": "订阅制，ToS 禁止抓取"
         }
       ]
