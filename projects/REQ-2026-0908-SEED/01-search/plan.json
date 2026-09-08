@@ -6,7 +6,7 @@
     "requester": "陈主管",
     "date": "2026-09-08",
     "node": "01-search-plan",
-    "version": "2026-09-08d"
+    "version": "2026-09-08e"
   },
   "target": 120,
   "keywords": {
@@ -342,18 +342,26 @@
   ],
   "channels": [
     {
-      "key": "brand",
-      "name": "品牌官网",
+      "key": "client",
+      "name": "客户官网",
       "mode": "auto",
-      "quota": 36,
+      "quota": 30,
       "license": "内部参考",
-      "note": "仅作内部对标。交付 PPT 必须保留 Sources 页并注明品牌，任何情况下不得当作原创款呈现给客户。"
+      "note": "客户自己在售的款。用来摸清他们的版型习惯、克重和价位 —— 这是判断新方向能不能落地的基准。仍然只能内部看，不得把客户现有款当成我们的提案放进交付页。"
+    },
+    {
+      "key": "brand",
+      "name": "对标品牌官网",
+      "mode": "auto",
+      "quota": 24,
+      "license": "内部参考",
+      "note": "竞品在售的款，用来看市场。交付 PPT 必须保留 Sources 页并注明品牌，任何情况下不得当作原创款呈现给客户。"
     },
     {
       "key": "pinterest",
       "name": "Pinterest",
       "mode": "auto-api",
-      "quota": 48,
+      "quota": 36,
       "license": "官方 API",
       "note": "只走官方 API，保留 pin 链接与作者署名；不抓网页、不绕登录。"
     },
@@ -361,18 +369,21 @@
       "key": "wgsn",
       "name": "WGSN / Fashion Snoops",
       "mode": "manual",
-      "quota": 36,
+      "quota": 30,
       "license": "订阅制，ToS 禁止抓取",
       "note": "佘吉只产出选片清单（栏目路径 + 关键词 + 目标张数），由持账号的同事手动导出后放进 02 的素材目录。"
     }
   ],
   "unmapped": [],
-  "approved": true,
-  "approval": {
-    "by": "陈主管",
-    "at": "2026-09-08T08:16:00+00:00",
-    "scope": "检索式与配额，含 5 个趋势方向（佘吉提案）",
-    "recorded_by": "佘吉（转述，非本人操作）",
-    "note": "方向为提案，WGSN 导出后需回头校准；校准若改动方向，本次批准不自动延续"
-  }
+  "approved": false,
+  "approval_history": [
+    {
+      "by": "陈主管",
+      "at": "2026-09-08T08:16:00+08:00",
+      "scope": "检索式与配额（旧口径：品牌官网 36 / Pinterest 48 / WGSN 36）",
+      "recorded_by": "佘吉（转述）",
+      "superseded_at": "2026-09-08",
+      "superseded_why": "渠道口径改了：品牌官网拆成「客户官网 30」和「对标品牌官网 24」，Pinterest 48→36、WGSN 36→30。批准的是配额，配额变了就不延续，需要重新确认一次。"
+    }
+  ]
 }

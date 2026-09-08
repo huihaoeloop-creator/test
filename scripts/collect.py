@@ -36,13 +36,14 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-VERSION = "2026-09-08b"
+VERSION = "2026-09-08c"
 
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff", ".bmp"}
 
 # 渠道 → 这张图能用到哪一步。节点 07 出交付页时要读这个字段。
 USE = {
-    "brand":     "internal",   # 品牌官网：只能内部对标，不进客户交付页
+    "client":    "internal",   # 客户官网：客户现有款，是基准不是提案
+    "brand":     "internal",   # 对标品牌官网：只能内部对标，不进客户交付页
     "wgsn":      "internal",   # 订阅站：同上，且不得外传
     "pinterest": "internal",   # 需保留作者署名
     "generated": "deliverable" # 节点 05 自己生成的，才是能交付的
@@ -154,6 +155,36 @@ def provenance_level(entry):
 # --------------------------------------------------------------------------
 # 采集
 # --------------------------------------------------------------------------
+
+
+def ingest_tree(root, plan, folder, channel, source, ledger):
+    """收一棵 brand_collect.mjs 分好方向的目录树。
+
+    子目录名是方向的 slug（elevated-everyday），对回 plan.json 里的方向名。
+    对不上的子目录（比如 unmatched）照收，但方向留空并点名 —— 这些是商品名
+    里没有线索、需要人工归类的，不能默默塞进某个方向。
+    """
+    tree = Path(folder)
+    if not tree.is_dir():
+        sys.exit(f"目录不存在：{folder}")
+
+    by_slug = {slug(d["name"]): d for d in plan.get("directions", [])}
+    total, orphan_dirs = 0, []
+
+    for child in sorted(tree.iterdir()):
+        if not child.is_dir():
+            continue
+        direction = by_slug.get(child.name)
+        if direction is None:
+            direction = {"name": f"（未归类·{child.name}）", "quota": 0}
+            orphan_dirs.append(child.name)
+        total += ingest(root, plan, child, channel, direction, source, ledger)
+
+    if not total and not orphan_dirs:
+        print("这棵树里没有子目录 —— 是不是该用 --ingest 而不是 --ingest-tree？")
+    for name in orphan_dirs:
+        print(f"  子目录「{name}」对不上任何方向，方向留空，需要人工归类")
+    return total
 
 
 def ingest(root, plan, folder, channel, direction, source, ledger):
@@ -305,6 +336,13 @@ def status(plan, ledger):
             bar = "█" * min(20, int(20 * len(got) / quota)) if quota else ""
             print(f"  {direction['name']:<28}{len(got):>4}/{quota:<4}{bar}")
 
+        # 方案外的方向（未归类、手工建的）也得露出来 —— 只按 plan 里的方向报，
+        # 收进来但没归好类的图在这张表上是隐形的，谁也不会去处理它们
+        planned = {d["name"] for d in directions}
+        for name in sorted({i["direction"] for i in items} - planned):
+            count = sum(1 for i in items if i["direction"] == name)
+            print(f"  {name:<28}{count:>4}     ← 待人工归类")
+
     print("\n【按渠道】")
     for channel in plan.get("channels", []):
         got = [i for i in items if i["channel"] == channel["key"]]
@@ -365,6 +403,8 @@ def main():
     parser.add_argument("--plan", required=True, help="节点 01 的 plan.json")
     parser.add_argument("--root", help="素材根目录，默认 plan.json 同级的 ../02-assets")
     parser.add_argument("--ingest", metavar="DIR", help="从人工导出的目录收图")
+    parser.add_argument("--ingest-tree", metavar="DIR",
+                        help="收一棵按方向分好的目录树，子目录名对回方向")
     parser.add_argument("--channel", default="wgsn", help="来源渠道（brand/wgsn/pinterest）")
     parser.add_argument("--direction", help="方向序号或名字的一段")
     parser.add_argument("--source", help="批次级出处说明，例：WGSN AW27 Knitwear Key Items")
@@ -383,6 +423,11 @@ def main():
     ledger = load_ledger(root)
 
     did_work = False
+
+    if args.ingest_tree:
+        ingest_tree(root, plan, args.ingest_tree, args.channel, args.source, ledger)
+        save_ledger(root, ledger)
+        did_work = True
 
     if args.ingest or args.pinterest_board:
         if not args.direction:

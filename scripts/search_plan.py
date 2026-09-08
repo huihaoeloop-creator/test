@@ -27,7 +27,7 @@ import re
 import sys
 from pathlib import Path
 
-VERSION = "2026-09-08d"
+VERSION = "2026-09-08e"
 
 # --------------------------------------------------------------------------
 # 渠道表 —— 合规边界写在这里，不在代码逻辑里
@@ -39,19 +39,29 @@ VERSION = "2026-09-08d"
 #   off       不采集
 CHANNELS = [
     {
-        "key": "brand",
-        "name": "品牌官网",
+        "key": "client",
+        "name": "客户官网",
         "mode": "auto",
-        "weight": 0.30,
+        "weight": 0.25,
         "license": "内部参考",
-        "note": "仅作内部对标。交付 PPT 必须保留 Sources 页并注明品牌，"
+        "note": "客户自己在售的款。用来摸清他们的版型习惯、克重和价位 —— "
+                "这是判断新方向能不能落地的基准。仍然只能内部看，"
+                "不得把客户现有款当成我们的提案放进交付页。",
+    },
+    {
+        "key": "brand",
+        "name": "对标品牌官网",
+        "mode": "auto",
+        "weight": 0.20,
+        "license": "内部参考",
+        "note": "竞品在售的款，用来看市场。交付 PPT 必须保留 Sources 页并注明品牌，"
                 "任何情况下不得当作原创款呈现给客户。",
     },
     {
         "key": "pinterest",
         "name": "Pinterest",
         "mode": "auto-api",
-        "weight": 0.40,
+        "weight": 0.30,
         "license": "官方 API",
         "note": "只走官方 API，保留 pin 链接与作者署名；不抓网页、不绕登录。",
     },
@@ -59,7 +69,7 @@ CHANNELS = [
         "key": "wgsn",
         "name": "WGSN / Fashion Snoops",
         "mode": "manual",
-        "weight": 0.30,
+        "weight": 0.25,
         "license": "订阅制，ToS 禁止抓取",
         "note": "佘吉只产出选片清单（栏目路径 + 关键词 + 目标张数），"
                 "由持账号的同事手动导出后放进 02 的素材目录。",

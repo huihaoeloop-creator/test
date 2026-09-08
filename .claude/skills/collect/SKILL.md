@@ -33,13 +33,26 @@ python -X utf8 scripts/collect.py --plan plan.json --ingest 导出/ \
 按内容哈希（sha256）去重，跨渠道也认：同一张图从品牌官网和 Pinterest 各来一次，
 只留一份。
 
-### 品牌官网（自动）
+### 客户官网 / 对标品牌官网（自动）
+
+两个渠道分开：**客户官网**是客户自己在售的款，用来摸他们的版型习惯、克重、价位，
+是判断新方向能不能落地的基准；**对标品牌官网**是竞品，用来看市场。两者都只能
+内部看，但角色不同，分析时不能混。
 
 ```
 node scripts/brand_collect.mjs <列表页URL> --probe          # 先看这个站什么结构
-node scripts/brand_collect.mjs <列表页URL> --card "a[href*='/products/']" \
-    --out 导出/seed --limit 36
+node scripts/brand_collect.mjs <列表页URL> --out 导出/seed --limit 30 \
+    --match-plan plan.json                                  # 按方向分好
+python -X utf8 scripts/collect.py --plan plan.json --ingest-tree 导出/seed \
+    --channel client --source "客户官网"
 ```
+
+`--match-plan` 拿商品名去撞各方向的检索词，命中多的那个赢，分方向落到子目录，
+`--ingest-tree` 一次收整棵树。
+
+**撞的是文字，不是图。** 商品名里没线索的（「Knit 011」「新品」）进 `unmatched`，
+台账里方向留空并点名，`--status` 会单列一行「待人工归类」——不能默默塞进某个
+方向，那等于污染数据。
 
 `--probe` 把几条常见的商品卡片选择器各命中多少个报出来，**让人挑**，不是脚本
 猜一个然后静悄悄抓错东西。抓完自动写 `sources.csv`，逐张带商品链接。

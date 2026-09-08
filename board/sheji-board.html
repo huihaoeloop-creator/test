@@ -265,8 +265,10 @@ td:first-child{font-weight:600; white-space:nowrap}
   <div class="scroll"><table>
     <thead><tr><th>渠道</th><th>佘吉能做什么</th><th>约束</th></tr></thead>
     <tbody>
-      <tr><td>品牌官网</td><td>可自动采集</td>
-        <td>仅内部对标。Sources 页必须注明品牌，<b>绝不能当原创款给客户</b></td></tr>
+      <tr><td>客户官网</td><td>可自动采集</td>
+        <td>客户自己在售的款，用来摸版型、克重、价位。<b>不得把客户现有款当成我们的提案</b></td></tr>
+      <tr><td>对标品牌官网</td><td>可自动采集</td>
+        <td>竞品在售的款。Sources 页必须注明品牌，<b>绝不能当原创款给客户</b></td></tr>
       <tr><td>Pinterest</td><td>只走官方 API</td>
         <td>官方 API 无全站搜索——人先在画板选片，脚本再拉画板。保留 pin 链接与作者</td></tr>
       <tr><td>WGSN / Fashion Snoops</td><td>只出选片清单</td>
@@ -360,7 +362,7 @@ const DATA = {
   "load": {
     "陈主管": {
       "total": 3,
-      "gate": 1,
+      "gate": 2,
       "overdue": 1,
       "req_ids": [
         "REQ-2026-0828-CHEN",
@@ -483,9 +485,9 @@ const DATA = {
       "open_questions": [],
       "due": "2026-09-08",
       "days_left": 0,
-      "node": "02",
-      "status": "running",
-      "why": "采集中 0/120 张",
+      "node": "01",
+      "status": "gate",
+      "why": "检索式与配额待确认（plan.json approved=false）",
       "target": 120,
       "collected": 0,
       "internal_only": 0,
@@ -549,21 +551,27 @@ const DATA = {
       "directions_status": "佘吉提案，未经陈主管确认；WGSN 导出后需回头校准",
       "channels": [
         {
-          "name": "品牌官网",
+          "name": "客户官网",
           "mode": "auto",
-          "quota": 36,
+          "quota": 30,
+          "license": "内部参考"
+        },
+        {
+          "name": "对标品牌官网",
+          "mode": "auto",
+          "quota": 24,
           "license": "内部参考"
         },
         {
           "name": "Pinterest",
           "mode": "auto-api",
-          "quota": 48,
+          "quota": 36,
           "license": "官方 API"
         },
         {
           "name": "WGSN / Fashion Snoops",
           "mode": "manual",
-          "quota": 36,
+          "quota": 30,
           "license": "订阅制，ToS 禁止抓取"
         }
       ]

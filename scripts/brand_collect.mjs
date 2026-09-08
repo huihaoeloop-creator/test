@@ -13,7 +13,7 @@
  *   python -X utf8 scripts/collect.py --plan plan.json --ingest 导出/seed \
  *       --channel brand --direction 1 --source "Seed 官网 Knitwear"
  */
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { chromium } from '@playwright/test';
 import { proxyFromEnv } from './lib/env.mjs';
@@ -42,6 +42,7 @@ const { values: opts, positionals } = parseArgs({
     card: { type: 'string' },
     delay: { type: 'string', default: '1500' },
     'min-bytes': { type: 'string', default: '20000' },
+    'match-plan': { type: 'string' },
     probe: { type: 'boolean', default: false },
     timeout: { type: 'string', default: '30000' },
   },
@@ -92,6 +93,33 @@ async function robotsAllows(request, target) {
   return { allowed: true, why: best ? `robots.txt 里 Allow: ${best.path}` : 'robots.txt 没有限制这个路径' };
 }
 
+/** 「Elevated Everyday　精致基础」→ elevated-everyday，和 collect.py 的 slug 一致 */
+function slug(name) {
+  return (name.split('\u3000')[0].replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase())
+    || 'direction';
+}
+
+/**
+ * 商品归到哪个方向：拿商品名去撞方向的检索词，命中多的那个赢。
+ *
+ * 撞的是**文字**，不是图。商品名里没有线索的（"Knit 03"、"新品"）落进
+ * 未匹配，交给人看 —— 与其瞎猜一个方向把图污染掉，不如把它们单独堆一堆。
+ */
+function matchDirection(text, directions) {
+  const haystack = ` ${text.toLowerCase()} `;
+  let best = null;
+  for (const direction of directions) {
+    let score = 0;
+    for (const term of direction.terms || []) {
+      // 词组按词拆，"drop shoulder" 要两个词都在才算命中
+      const words = term.toLowerCase().split(/\s+/).filter(Boolean);
+      if (words.length && words.every((word) => haystack.includes(word))) score += words.length;
+    }
+    if (score > 0 && (!best || score > best.score)) best = { name: direction.name, score };
+  }
+  return best ? best.name : null;
+}
+
 const browser = await chromium.launch({ proxy: proxyFromEnv(listing) });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
 const page = await context.newPage();
@@ -131,6 +159,18 @@ try {
       throw new Error(STOP);
     }
     console.error(`用选择器：${card}`);
+
+    let directions = [];
+    if (opts['match-plan']) {
+      const plan = JSON.parse(await readFile(opts['match-plan'], 'utf8'));
+      directions = plan.directions || [];
+      if (!directions.length) {
+        console.error('这份 plan.json 里没有 directions，没法按方向分。去掉 --match-plan 再跑。');
+        process.exitCode = 1;
+        throw new Error(STOP);
+      }
+      console.error(`按 ${directions.length} 个方向分：` + directions.map((d) => d.name).join('、'));
+    }
 
     const seen = new Set();
     const rows = [];
@@ -178,9 +218,15 @@ try {
         if (buffer.length < minBytes) { dropped.tooSmall += 1; continue; }
 
         const extension = (absolute.split('?')[0].match(/\.(jpe?g|png|webp)$/i)?.[1] || 'jpg').toLowerCase();
+        const matched = directions.length ? matchDirection(`${item.name} ${item.href}`, directions) : null;
+        const bucket = directions.length ? slug(matched || '未匹配 unmatched') : '';
+        const folder = bucket ? `${opts.out}/${bucket}` : opts.out;
+        await mkdir(folder, { recursive: true });
+
         const filename = `${String(rows.length + 1).padStart(3, '0')}.${extension === 'jpeg' ? 'jpg' : extension}`;
-        await writeFile(`${opts.out}/${filename}`, buffer);
-        rows.push({ filename, source_url: item.href, author: new URL(item.href).hostname, note: item.name });
+        await writeFile(`${folder}/${filename}`, buffer);
+        rows.push({ bucket, filename, direction: matched || '',
+                    source_url: item.href, author: new URL(item.href).hostname, note: item.name });
         process.stderr.write(`\r收 ${rows.length}/${limit}`);
         await page.waitForTimeout(delay);      // 一张一停，别把人家站点打疼
       }
@@ -188,10 +234,15 @@ try {
     process.stderr.write('\n');
 
     const escape = (value) => `"${String(value).replace(/"/g, '""')}"`;
-    await writeFile(`${opts.out}/sources.csv`,
-      'filename,source_url,author,note\n'
-      + rows.map((r) => [r.filename, r.source_url, r.author, r.note].map(escape).join(',')).join('\n') + '\n',
-      'utf8');
+    const csv = (list) => 'filename,source_url,author,note\n'
+      + list.map((r) => [r.filename, r.source_url, r.author, r.note].map(escape).join(',')).join('\n') + '\n';
+
+    const buckets = new Map();
+    for (const row of rows) buckets.set(row.bucket, (buckets.get(row.bucket) || []).concat(row));
+    for (const [bucket, list] of buckets) {
+      await writeFile(bucket ? `${opts.out}/${bucket}/sources.csv` : `${opts.out}/sources.csv`,
+        csv(list), 'utf8');
+    }
 
     const skipped = Object.entries(dropped).filter(([, n]) => n > 0);
     console.log(`\n收了 ${rows.length} 张 → ${opts.out}/（含 sources.csv，逐张有出处）`);
@@ -202,9 +253,24 @@ try {
         console.log('全被当成缩略图了 —— 这个站的图可能就是小尺寸，把 --min-bytes 调低再跑。');
       }
     }
-    console.log('下一步：');
-    console.log(`  python -X utf8 scripts/collect.py --plan plan.json --ingest ${opts.out} \\`);
-    console.log('      --channel brand --direction 1 --source "品牌官网"');
+    if (directions.length) {
+      console.log('\n按方向分：');
+      for (const direction of directions) {
+        const n = rows.filter((r) => r.direction === direction.name).length;
+        console.log(`  ${direction.name}　${n} 张`);
+      }
+      const orphan = rows.filter((r) => !r.direction).length;
+      if (orphan) {
+        console.log(`  未匹配　${orphan} 张　← 商品名里没有方向线索，人工看一眼再归`);
+      }
+      console.log('\n下一步（一次收整棵树，子目录名对回方向）：');
+      console.log(`  python -X utf8 scripts/collect.py --plan plan.json --ingest-tree ${opts.out} \\`);
+      console.log('      --channel client --source "客户官网"');
+    } else {
+      console.log('下一步：');
+      console.log(`  python -X utf8 scripts/collect.py --plan plan.json --ingest ${opts.out} \\`);
+      console.log('      --channel client --direction 1 --source "客户官网"');
+    }
   }
   }
 } catch (error) {
