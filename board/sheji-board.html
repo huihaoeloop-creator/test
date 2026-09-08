@@ -247,7 +247,7 @@ td:first-child{font-weight:600; white-space:nowrap}
   <div class="stamp">
     <b>快照 2026-09-08</b>
     <span id="hd-count"></span><br>
-    管道 6/9 已建成
+    管道 7/9 已建成
   </div>
 </header>
 
@@ -351,7 +351,7 @@ const DATA = {
     {
       "n": "06",
       "name": "后期处理",
-      "script": null
+      "script": "postprocess.py"
     },
     {
       "n": "07",
@@ -370,6 +370,7 @@ const DATA = {
     "02",
     "03",
     "04",
+    "06",
     "07"
   ],
   "requesters": [
@@ -775,7 +776,7 @@ function renderCounts(){
   const text = `${DATA.requests.length} 张单 · ${DATA.requesters.length} 位主管`
              + (gate ? ` · ${gate} 张等点头` : "");
   $("hd-count").textContent = text;
-  $("ft-count").textContent = text + "　管道 6/9 已建成";
+  $("ft-count").textContent = text + "　管道 7/9 已建成";
 }
 
 function renderWho(){
@@ -926,7 +927,7 @@ function renderPipe(){
     "03":["ledger.json + 图","style.json —— 配色和高频词算出来，廓形/克重留给人看图填"],
     "04":["style.json","各工具的 prompt——一款正反两条。MJ 无官方 API，人粘贴；Ideogram 走官方 API"],
     "05":["prompt 组","生成图（这些才是可交付的图）"],
-    "06":["生成图","去背白底图，按 款号_f / 款号_b 命名"],
+    "06":["生成图","去背白底图 + brief.json 的 recommendations —— 直接接节点 07"],
     "07":["brief.json + .potx 模版","可交付 PPT（首末页原样，字体字号取自模版第二页）"],
     "08":["客户采纳结果","回写历史库，下次接单命中相似案例"],
   };

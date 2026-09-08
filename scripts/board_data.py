@@ -33,7 +33,7 @@ NODES = [
     ("03", "风格解构", "decompose.py"),
     ("04", "出图指令", "prompts.py"),
     ("05", "批量生成", None),
-    ("06", "后期处理", None),
+    ("06", "后期处理", "postprocess.py"),
     ("07", "出 PPT", "build_deck.py"),
     ("08", "复盘沉淀", None),
 ]

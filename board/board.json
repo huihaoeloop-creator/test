@@ -34,7 +34,7 @@
     {
       "n": "06",
       "name": "后期处理",
-      "script": null
+      "script": "postprocess.py"
     },
     {
       "n": "07",
@@ -53,6 +53,7 @@
     "02",
     "03",
     "04",
+    "06",
     "07"
   ],
   "requesters": [

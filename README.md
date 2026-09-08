@@ -139,6 +139,7 @@ advances a node on its own.
 | 04 出图指令 | `scripts/prompts.py` | `style.json` → `prompts.json` + 各工具的 prompt 文件 |
 | — 看板数据 | `scripts/board_data.py` | `projects/` → `board.json` |
 | — 本地部署 | `scripts/serve.py` | 本机起服务，主管用浏览器看 |
+| 06 后期处理 | `scripts/postprocess.py` | 生成图 → 去背白底图 + `brief.json` 的 recommendations |
 | 07 出 PPT | `scripts/build_deck.py` | `brief.json` + `.potx` 模版 → 交付 PPT |
 | — 诊断 | `scripts/check_pptx.py`, `scripts/dump_template.py` | 查 PPT 结构 / 看模版排版 |
 
