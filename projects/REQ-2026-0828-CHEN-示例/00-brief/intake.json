@@ -1,0 +1,41 @@
+{
+  "example": true,
+  "meta": {
+    "req_id": "REQ-2026-0828-CHEN",
+    "project": "AW26 补单 · 针织开衫（示例）",
+    "client": "K 客户",
+    "requester": "陈主管",
+    "date": "2026-08-28"
+  },
+  "raw_request": "K 客户上次那批加两个开衫方向，越快越好。",
+  "fields": {
+    "品类": "女装开衫",
+    "季节": "2026 秋冬",
+    "交付日": "2026-09-03",
+    "廓形": "宽松 / 落肩",
+    "色彩倾向": "大地色",
+    "面料": "羊毛 / 罗纹",
+    "目标客群": "25-35 岁",
+    "价格带": "¥329-499",
+    "数量": "2 个方向 × 3 款"
+  },
+  "open_questions": [],
+  "directions": [
+    {
+      "name": "Cocoon Wrap　茧型开衫",
+      "terms": [
+        "cocoon shape",
+        "wool",
+        "relaxed fit"
+      ]
+    },
+    {
+      "name": "Fine Rib　细罗纹",
+      "terms": [
+        "rib knit",
+        "fine gauge",
+        "earth tone"
+      ]
+    }
+  ]
+}

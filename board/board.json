@@ -1,5 +1,5 @@
 {
-  "generated_by": "board_data.py 2026-09-08a",
+  "generated_by": "board_data.py 2026-09-08b",
   "nodes": [
     {
       "n": "00",
@@ -58,53 +58,84 @@
     "王主管",
     "陈主管"
   ],
+  "load": {
+    "陈主管": {
+      "total": 3,
+      "gate": 2,
+      "overdue": 1,
+      "req_ids": [
+        "REQ-2026-0828-CHEN",
+        "REQ-2026-0908-SEED",
+        "REQ-2026-0910-CHEN"
+      ]
+    },
+    "王主管": {
+      "total": 1,
+      "gate": 0,
+      "overdue": 0,
+      "req_ids": [
+        "REQ-2026-0902-WANG"
+      ]
+    },
+    "李主管": {
+      "total": 1,
+      "gate": 1,
+      "overdue": 0,
+      "req_ids": [
+        "REQ-2026-0905-LI"
+      ]
+    }
+  },
+  "warnings": [],
   "requests": [
     {
-      "req_id": "REQ-2026-0902-WANG",
-      "project": "AW27 男装夹克（示例）",
-      "client": "N 客户",
-      "requester": "王主管",
-      "date": "2026-09-02",
+      "req_id": "REQ-2026-0828-CHEN",
+      "project": "AW26 补单 · 针织开衫（示例）",
+      "client": "K 客户",
+      "requester": "陈主管",
+      "date": "2026-08-28",
       "example": true,
-      "raw_request": "N 客户要一版男装夹克，机能风，秋冬。",
+      "raw_request": "K 客户上次那批加两个开衫方向，越快越好。",
       "fields": {
-        "品类": "男装夹克",
-        "季节": "2027 秋冬",
-        "交付日": "2026-09-20",
+        "品类": "女装开衫",
+        "季节": "2026 秋冬",
+        "交付日": "2026-09-03",
         "廓形": "宽松 / 落肩",
-        "色彩倾向": "中性色",
-        "面料": "尼龙 / 涤纶",
+        "色彩倾向": "大地色",
+        "面料": "羊毛 / 罗纹",
         "目标客群": "25-35 岁",
-        "价格带": "¥599-899",
+        "价格带": "¥329-499",
         "数量": "2 个方向 × 3 款"
       },
       "open_questions": [],
+      "due": "2026-09-03",
+      "days_left": -5,
       "node": "02",
       "status": "running",
-      "why": "采集中 23/60 张",
-      "target": 60,
-      "collected": 23,
-      "internal_only": 23,
+      "why": "采集中 31/40 张",
+      "target": 40,
+      "collected": 31,
+      "internal_only": 31,
       "directions": [
         {
-          "name": "Utility Shell　机能外壳",
+          "name": "Cocoon Wrap　茧型开衫",
           "terms": [
-            "nylon",
-            "funnel neck",
-            "colour blocking"
+            "cocoon shape",
+            "wool",
+            "relaxed fit"
           ],
-          "quota": 30,
-          "got": 12
+          "quota": 20,
+          "got": 16
         },
         {
-          "name": "Soft Tailoring　软性剪裁",
+          "name": "Fine Rib　细罗纹",
           "terms": [
-            "relaxed fit",
-            "drop shoulder",
-            "neutral palette"
+            "rib knit",
+            "fine gauge",
+            "earth tone"
           ],
-          "quota": 30,
-          "got": 11
+          "quota": 20,
+          "got": 15
         }
       ],
       "directions_status": "",
@@ -112,51 +143,22 @@
         {
           "name": "品牌官网",
           "mode": "auto",
-          "quota": 18,
+          "quota": 12,
           "license": "内部参考"
         },
         {
           "name": "Pinterest",
           "mode": "auto-api",
-          "quota": 24,
+          "quota": 16,
           "license": "官方 API"
         },
         {
           "name": "WGSN / Fashion Snoops",
           "mode": "manual",
-          "quota": 18,
+          "quota": 12,
           "license": "订阅制，ToS 禁止抓取"
         }
       ]
-    },
-    {
-      "req_id": "REQ-2026-0905-LI",
-      "project": "SS27 连衣裙企划（示例）",
-      "client": "M 客户",
-      "requester": "李主管",
-      "date": "2026-09-05",
-      "example": true,
-      "raw_request": "M 客户春夏连衣裙，要度假感，月底前给三个方向。",
-      "fields": {
-        "品类": "女装连衣裙",
-        "季节": "2027 春夏",
-        "交付日": "2026-09-30",
-        "廓形": "A 摆 / 收腰",
-        "目标客群": "25-35 岁",
-        "数量": "3 个方向"
-      },
-      "open_questions": [
-        "「度假感」是 A 海岛树脂色 + 轻薄雪纺　B 地中海条纹 + 棉麻　—— 面料和色彩两条路差很远"
-      ],
-      "node": "00",
-      "status": "gate",
-      "why": "1 项待李主管确认",
-      "target": 0,
-      "collected": 0,
-      "internal_only": 0,
-      "directions": [],
-      "directions_status": "",
-      "channels": []
     },
     {
       "req_id": "REQ-2026-0908-SEED",
@@ -180,6 +182,8 @@
         "备注": "交付物含两部分：趋势 + 款式推荐。已确认 Seed 指澳洲女装品牌 Seed，本单按「做给 Seed」处理。WGSN 走人工导出（陈主管提出给账号密码，未采纳，见 01 检索策略）。"
       },
       "open_questions": [],
+      "due": "2026-09-08",
+      "days_left": 0,
       "node": "01",
       "status": "gate",
       "why": "检索式与配额待确认（plan.json approved=false）",
@@ -264,6 +268,140 @@
           "license": "订阅制，ToS 禁止抓取"
         }
       ]
+    },
+    {
+      "req_id": "REQ-2026-0902-WANG",
+      "project": "AW27 男装夹克（示例）",
+      "client": "N 客户",
+      "requester": "王主管",
+      "date": "2026-09-02",
+      "example": true,
+      "raw_request": "N 客户要一版男装夹克，机能风，秋冬。",
+      "fields": {
+        "品类": "男装夹克",
+        "季节": "2027 秋冬",
+        "交付日": "2026-09-20",
+        "廓形": "宽松 / 落肩",
+        "色彩倾向": "中性色",
+        "面料": "尼龙 / 涤纶",
+        "目标客群": "25-35 岁",
+        "价格带": "¥599-899",
+        "数量": "2 个方向 × 3 款"
+      },
+      "open_questions": [],
+      "due": "2026-09-20",
+      "days_left": 12,
+      "node": "02",
+      "status": "running",
+      "why": "采集中 23/60 张",
+      "target": 60,
+      "collected": 23,
+      "internal_only": 23,
+      "directions": [
+        {
+          "name": "Utility Shell　机能外壳",
+          "terms": [
+            "nylon",
+            "funnel neck",
+            "colour blocking"
+          ],
+          "quota": 30,
+          "got": 12
+        },
+        {
+          "name": "Soft Tailoring　软性剪裁",
+          "terms": [
+            "relaxed fit",
+            "drop shoulder",
+            "neutral palette"
+          ],
+          "quota": 30,
+          "got": 11
+        }
+      ],
+      "directions_status": "",
+      "channels": [
+        {
+          "name": "品牌官网",
+          "mode": "auto",
+          "quota": 18,
+          "license": "内部参考"
+        },
+        {
+          "name": "Pinterest",
+          "mode": "auto-api",
+          "quota": 24,
+          "license": "官方 API"
+        },
+        {
+          "name": "WGSN / Fashion Snoops",
+          "mode": "manual",
+          "quota": 18,
+          "license": "订阅制，ToS 禁止抓取"
+        }
+      ]
+    },
+    {
+      "req_id": "REQ-2026-0910-CHEN",
+      "project": "SS27 针织背心（示例）",
+      "client": "P 客户",
+      "requester": "陈主管",
+      "date": "2026-09-06",
+      "example": true,
+      "raw_request": "P 客户想要春夏的针织背心，学院风那种，月底给。",
+      "fields": {
+        "品类": "女装针织背心",
+        "季节": "2027 春夏",
+        "交付日": "2026-09-25",
+        "廓形": "修身",
+        "目标客群": "18-25 岁",
+        "数量": "3 个方向"
+      },
+      "open_questions": [
+        "「学院风」是 A 菱格 argyle + V 领　B 条纹 + 圆领校队感　—— 出图指令差很远"
+      ],
+      "due": "2026-09-25",
+      "days_left": 17,
+      "node": "00",
+      "status": "gate",
+      "why": "1 项待陈主管确认",
+      "target": 0,
+      "collected": 0,
+      "internal_only": 0,
+      "directions": [],
+      "directions_status": "",
+      "channels": []
+    },
+    {
+      "req_id": "REQ-2026-0905-LI",
+      "project": "SS27 连衣裙企划（示例）",
+      "client": "M 客户",
+      "requester": "李主管",
+      "date": "2026-09-05",
+      "example": true,
+      "raw_request": "M 客户春夏连衣裙，要度假感，月底前给三个方向。",
+      "fields": {
+        "品类": "女装连衣裙",
+        "季节": "2027 春夏",
+        "交付日": "2026-09-30",
+        "廓形": "A 摆 / 收腰",
+        "目标客群": "25-35 岁",
+        "数量": "3 个方向"
+      },
+      "open_questions": [
+        "「度假感」是 A 海岛树脂色 + 轻薄雪纺　B 地中海条纹 + 棉麻　—— 面料和色彩两条路差很远"
+      ],
+      "due": "2026-09-30",
+      "days_left": 22,
+      "node": "00",
+      "status": "gate",
+      "why": "1 项待李主管确认",
+      "target": 0,
+      "collected": 0,
+      "internal_only": 0,
+      "directions": [],
+      "directions_status": "",
+      "channels": []
     }
   ]
 }

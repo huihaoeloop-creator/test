@@ -12,6 +12,13 @@ description: 节点 00 · 把陈主管的一句话设计需求拆成结构化《
 
 ## 步骤
 
+0. **开单先给 `--tag` 和 `--requester`：**
+   ```
+   python -X utf8 scripts/intake.py --new --tag SEED --requester 陈主管 -o intake.json
+   ```
+   一位主管一天可能开好几张单。不给 `--tag`，两张单会拿到同一个 `req_id`，
+   历史相似度检索会把它们当成同一张跳过。放进 `projects/<req_id>/00-brief/`。
+
 1. **原话原样抄进 `raw_request`**，不要改写、不要润色。后面对不上时要靠它回溯。
 
 2. **能确定的字段才填。** 字段清单跑 `python scripts/intake.py --fields` 看。

@@ -217,6 +217,14 @@ td:first-child{font-weight:600; white-space:nowrap}
 .warn{margin-top:8px; font-size:12px; color:var(--block); font-weight:500}
 .qs{margin:0; padding-left:20px; display:grid; gap:6px; font-size:13px; color:var(--ink-2)}
 .empty{color:var(--muted); font-size:13px}
+.due{font-size:12px; font-variant-numeric:tabular-nums; color:var(--muted)}
+.due.soon{color:var(--wait); font-weight:600}
+.due.late{color:var(--block); font-weight:600}
+.warn-box{margin-top:20px; padding:12px 16px; background:var(--block-soft);
+  border-left:3px solid var(--block); border-radius:2px}
+.warn-box ul{margin:0; padding-left:18px; font-size:13px; color:var(--ink-2)}
+.who small.g{color:var(--wait)} .who small.o{color:var(--block)}
+.who[aria-pressed="true"] small{color:inherit}
 </style>
 
 <div class="wrap">
@@ -225,7 +233,7 @@ td:first-child{font-weight:600; white-space:nowrap}
   <div>
     <div class="eyebrow">设计 AGENT · 工作流</div>
     <h1>佘吉工作台</h1>
-    <p>佘吉同时接多位主管的单。每张单各走各的九个节点，每一步都要人点头才往下走。</p>
+    <p>佘吉同时接多位主管的单，一位主管也可以挂多张。每张单各走各的九个节点，按交期排序——逾期的排最前。</p>
   </div>
   <div class="stamp">
     <b>快照 2026-09-08</b>
@@ -233,6 +241,8 @@ td:first-child{font-weight:600; white-space:nowrap}
     管道 4/9 已建成
   </div>
 </header>
+
+<div id="warns"></div>
 
 <section>
   <div class="sec-head"><h2>按主管看</h2><span>这是筛选，不是隔离——每个人都能看到全部</span></div>
@@ -288,7 +298,7 @@ td:first-child{font-weight:600; white-space:nowrap}
 
 <script>
 const DATA = {
-  "generated_by": "board_data.py 2026-09-08a",
+  "generated_by": "board_data.py 2026-09-08b",
   "nodes": [
     {
       "n": "00",
@@ -347,53 +357,84 @@ const DATA = {
     "王主管",
     "陈主管"
   ],
+  "load": {
+    "陈主管": {
+      "total": 3,
+      "gate": 2,
+      "overdue": 1,
+      "req_ids": [
+        "REQ-2026-0828-CHEN",
+        "REQ-2026-0908-SEED",
+        "REQ-2026-0910-CHEN"
+      ]
+    },
+    "王主管": {
+      "total": 1,
+      "gate": 0,
+      "overdue": 0,
+      "req_ids": [
+        "REQ-2026-0902-WANG"
+      ]
+    },
+    "李主管": {
+      "total": 1,
+      "gate": 1,
+      "overdue": 0,
+      "req_ids": [
+        "REQ-2026-0905-LI"
+      ]
+    }
+  },
+  "warnings": [],
   "requests": [
     {
-      "req_id": "REQ-2026-0902-WANG",
-      "project": "AW27 男装夹克（示例）",
-      "client": "N 客户",
-      "requester": "王主管",
-      "date": "2026-09-02",
+      "req_id": "REQ-2026-0828-CHEN",
+      "project": "AW26 补单 · 针织开衫（示例）",
+      "client": "K 客户",
+      "requester": "陈主管",
+      "date": "2026-08-28",
       "example": true,
-      "raw_request": "N 客户要一版男装夹克，机能风，秋冬。",
+      "raw_request": "K 客户上次那批加两个开衫方向，越快越好。",
       "fields": {
-        "品类": "男装夹克",
-        "季节": "2027 秋冬",
-        "交付日": "2026-09-20",
+        "品类": "女装开衫",
+        "季节": "2026 秋冬",
+        "交付日": "2026-09-03",
         "廓形": "宽松 / 落肩",
-        "色彩倾向": "中性色",
-        "面料": "尼龙 / 涤纶",
+        "色彩倾向": "大地色",
+        "面料": "羊毛 / 罗纹",
         "目标客群": "25-35 岁",
-        "价格带": "¥599-899",
+        "价格带": "¥329-499",
         "数量": "2 个方向 × 3 款"
       },
       "open_questions": [],
+      "due": "2026-09-03",
+      "days_left": -5,
       "node": "02",
       "status": "running",
-      "why": "采集中 23/60 张",
-      "target": 60,
-      "collected": 23,
-      "internal_only": 23,
+      "why": "采集中 31/40 张",
+      "target": 40,
+      "collected": 31,
+      "internal_only": 31,
       "directions": [
         {
-          "name": "Utility Shell　机能外壳",
+          "name": "Cocoon Wrap　茧型开衫",
           "terms": [
-            "nylon",
-            "funnel neck",
-            "colour blocking"
+            "cocoon shape",
+            "wool",
+            "relaxed fit"
           ],
-          "quota": 30,
-          "got": 12
+          "quota": 20,
+          "got": 16
         },
         {
-          "name": "Soft Tailoring　软性剪裁",
+          "name": "Fine Rib　细罗纹",
           "terms": [
-            "relaxed fit",
-            "drop shoulder",
-            "neutral palette"
+            "rib knit",
+            "fine gauge",
+            "earth tone"
           ],
-          "quota": 30,
-          "got": 11
+          "quota": 20,
+          "got": 15
         }
       ],
       "directions_status": "",
@@ -401,51 +442,22 @@ const DATA = {
         {
           "name": "品牌官网",
           "mode": "auto",
-          "quota": 18,
+          "quota": 12,
           "license": "内部参考"
         },
         {
           "name": "Pinterest",
           "mode": "auto-api",
-          "quota": 24,
+          "quota": 16,
           "license": "官方 API"
         },
         {
           "name": "WGSN / Fashion Snoops",
           "mode": "manual",
-          "quota": 18,
+          "quota": 12,
           "license": "订阅制，ToS 禁止抓取"
         }
       ]
-    },
-    {
-      "req_id": "REQ-2026-0905-LI",
-      "project": "SS27 连衣裙企划（示例）",
-      "client": "M 客户",
-      "requester": "李主管",
-      "date": "2026-09-05",
-      "example": true,
-      "raw_request": "M 客户春夏连衣裙，要度假感，月底前给三个方向。",
-      "fields": {
-        "品类": "女装连衣裙",
-        "季节": "2027 春夏",
-        "交付日": "2026-09-30",
-        "廓形": "A 摆 / 收腰",
-        "目标客群": "25-35 岁",
-        "数量": "3 个方向"
-      },
-      "open_questions": [
-        "「度假感」是 A 海岛树脂色 + 轻薄雪纺　B 地中海条纹 + 棉麻　—— 面料和色彩两条路差很远"
-      ],
-      "node": "00",
-      "status": "gate",
-      "why": "1 项待李主管确认",
-      "target": 0,
-      "collected": 0,
-      "internal_only": 0,
-      "directions": [],
-      "directions_status": "",
-      "channels": []
     },
     {
       "req_id": "REQ-2026-0908-SEED",
@@ -469,6 +481,8 @@ const DATA = {
         "备注": "交付物含两部分：趋势 + 款式推荐。已确认 Seed 指澳洲女装品牌 Seed，本单按「做给 Seed」处理。WGSN 走人工导出（陈主管提出给账号密码，未采纳，见 01 检索策略）。"
       },
       "open_questions": [],
+      "due": "2026-09-08",
+      "days_left": 0,
       "node": "01",
       "status": "gate",
       "why": "检索式与配额待确认（plan.json approved=false）",
@@ -553,6 +567,140 @@ const DATA = {
           "license": "订阅制，ToS 禁止抓取"
         }
       ]
+    },
+    {
+      "req_id": "REQ-2026-0902-WANG",
+      "project": "AW27 男装夹克（示例）",
+      "client": "N 客户",
+      "requester": "王主管",
+      "date": "2026-09-02",
+      "example": true,
+      "raw_request": "N 客户要一版男装夹克，机能风，秋冬。",
+      "fields": {
+        "品类": "男装夹克",
+        "季节": "2027 秋冬",
+        "交付日": "2026-09-20",
+        "廓形": "宽松 / 落肩",
+        "色彩倾向": "中性色",
+        "面料": "尼龙 / 涤纶",
+        "目标客群": "25-35 岁",
+        "价格带": "¥599-899",
+        "数量": "2 个方向 × 3 款"
+      },
+      "open_questions": [],
+      "due": "2026-09-20",
+      "days_left": 12,
+      "node": "02",
+      "status": "running",
+      "why": "采集中 23/60 张",
+      "target": 60,
+      "collected": 23,
+      "internal_only": 23,
+      "directions": [
+        {
+          "name": "Utility Shell　机能外壳",
+          "terms": [
+            "nylon",
+            "funnel neck",
+            "colour blocking"
+          ],
+          "quota": 30,
+          "got": 12
+        },
+        {
+          "name": "Soft Tailoring　软性剪裁",
+          "terms": [
+            "relaxed fit",
+            "drop shoulder",
+            "neutral palette"
+          ],
+          "quota": 30,
+          "got": 11
+        }
+      ],
+      "directions_status": "",
+      "channels": [
+        {
+          "name": "品牌官网",
+          "mode": "auto",
+          "quota": 18,
+          "license": "内部参考"
+        },
+        {
+          "name": "Pinterest",
+          "mode": "auto-api",
+          "quota": 24,
+          "license": "官方 API"
+        },
+        {
+          "name": "WGSN / Fashion Snoops",
+          "mode": "manual",
+          "quota": 18,
+          "license": "订阅制，ToS 禁止抓取"
+        }
+      ]
+    },
+    {
+      "req_id": "REQ-2026-0910-CHEN",
+      "project": "SS27 针织背心（示例）",
+      "client": "P 客户",
+      "requester": "陈主管",
+      "date": "2026-09-06",
+      "example": true,
+      "raw_request": "P 客户想要春夏的针织背心，学院风那种，月底给。",
+      "fields": {
+        "品类": "女装针织背心",
+        "季节": "2027 春夏",
+        "交付日": "2026-09-25",
+        "廓形": "修身",
+        "目标客群": "18-25 岁",
+        "数量": "3 个方向"
+      },
+      "open_questions": [
+        "「学院风」是 A 菱格 argyle + V 领　B 条纹 + 圆领校队感　—— 出图指令差很远"
+      ],
+      "due": "2026-09-25",
+      "days_left": 17,
+      "node": "00",
+      "status": "gate",
+      "why": "1 项待陈主管确认",
+      "target": 0,
+      "collected": 0,
+      "internal_only": 0,
+      "directions": [],
+      "directions_status": "",
+      "channels": []
+    },
+    {
+      "req_id": "REQ-2026-0905-LI",
+      "project": "SS27 连衣裙企划（示例）",
+      "client": "M 客户",
+      "requester": "李主管",
+      "date": "2026-09-05",
+      "example": true,
+      "raw_request": "M 客户春夏连衣裙，要度假感，月底前给三个方向。",
+      "fields": {
+        "品类": "女装连衣裙",
+        "季节": "2027 春夏",
+        "交付日": "2026-09-30",
+        "廓形": "A 摆 / 收腰",
+        "目标客群": "25-35 岁",
+        "数量": "3 个方向"
+      },
+      "open_questions": [
+        "「度假感」是 A 海岛树脂色 + 轻薄雪纺　B 地中海条纹 + 棉麻　—— 面料和色彩两条路差很远"
+      ],
+      "due": "2026-09-30",
+      "days_left": 22,
+      "node": "00",
+      "status": "gate",
+      "why": "1 项待李主管确认",
+      "target": 0,
+      "collected": 0,
+      "internal_only": 0,
+      "directions": [],
+      "directions_status": "",
+      "channels": []
     }
   ]
 };
@@ -575,19 +723,42 @@ const visible = () => who === "全部" ? DATA.requests : DATA.requests.filter(r 
 
 /* ---------- 顶部与筛选 ---------- */
 function renderCounts(){
-  const text = `${DATA.requests.length} 张单 · ${DATA.requesters.length} 位主管`;
+  const gate = DATA.requests.filter(r => r.status === "gate").length;
+  const text = `${DATA.requests.length} 张单 · ${DATA.requesters.length} 位主管`
+             + (gate ? ` · ${gate} 张等点头` : "");
   $("hd-count").textContent = text;
   $("ft-count").textContent = text + "　管道 4/9 已建成";
 }
 
 function renderWho(){
-  const options = ["全部"].concat(DATA.requesters);
-  $("who-bar").innerHTML = options.map(name => {
-    const n = name === "全部" ? DATA.requests.length
-                              : DATA.requests.filter(r => r.requester === name).length;
+  const all = {total:DATA.requests.length,
+               gate:DATA.requests.filter(r => r.status === "gate").length,
+               overdue:DATA.requests.filter(r => r.days_left !== null && r.days_left < 0 && r.node < "07").length};
+  const options = [["全部", all]].concat(DATA.requesters.map(n => [n, DATA.load[n]]));
+  $("who-bar").innerHTML = options.map(([name, load]) => {
+    // 一位主管挂多张单时，"几张"不够用 —— 要看几张在等他、几张已经逾期
+    const bits = [`<small>${load.total}</small>`];
+    if (load.gate) bits.push(`<small class="g">${load.gate} 等你</small>`);
+    if (load.overdue) bits.push(`<small class="o">${load.overdue} 逾期</small>`);
     return `<button class="who" data-who="${esc(name)}" aria-pressed="${name === who}">
-      ${esc(name)}<small>${n}</small></button>`;
+      ${esc(name)}${bits.join("")}</button>`;
   }).join("");
+}
+
+function dueLabel(request){
+  const left = request.days_left;
+  if (left === null) return `<span class="due">交期未定</span>`;
+  if (request.node >= "07") return `<span class="due">已交付</span>`;
+  if (left < 0) return `<span class="due late">逾期 ${-left} 天</span>`;
+  if (left === 0) return `<span class="due soon">今天到期</span>`;
+  if (left <= 3) return `<span class="due soon">还剩 ${left} 天</span>`;
+  return `<span class="due">还剩 ${left} 天</span>`;
+}
+
+function renderWarns(){
+  const list = DATA.warnings || [];
+  $("warns").innerHTML = list.length
+    ? `<div class="warn-box"><ul>${list.map(w => `<li>${esc(w)}</li>`).join("")}</ul></div>` : "";
 }
 
 /* ---------- 需求列表 ---------- */
@@ -610,7 +781,7 @@ function renderReqs(){
       <div class="r-who">${esc(request.requester)} · ${esc(request.client)}</div>
       <div class="r-name">${esc(request.project)}${request.example ? '<span class="tag-eg">示例</span>' : ""}</div>
       <div class="r-why">${esc(request.why)}</div>
-      <div class="r-side">${chip}${rail(request)}
+      <div class="r-side">${chip}${dueLabel(request)}${rail(request)}
         <div class="r-node">节点 ${esc(request.node)} ${esc(node ? node.name : "")}</div></div>
     </button>`;
   }).join("") : `<p class="empty">这位主管名下没有在办的单。</p>`;
@@ -763,7 +934,7 @@ document.addEventListener("click", (event) => {
   }
 });
 
-renderCounts(); renderWho(); renderReqs(); renderPipe(); renderDetail();
+renderCounts(); renderWarns(); renderWho(); renderReqs(); renderPipe(); renderDetail();
 
 (async () => {
   db = await claude.use("db");

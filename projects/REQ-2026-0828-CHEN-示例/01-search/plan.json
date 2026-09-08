@@ -1,0 +1,129 @@
+{
+  "meta": {
+    "req_id": "REQ-2026-0828-CHEN",
+    "project": "AW26 补单 · 针织开衫（示例）",
+    "client": "K 客户",
+    "requester": "陈主管",
+    "date": "2026-08-28",
+    "node": "01-search-plan",
+    "version": "2026-09-08d"
+  },
+  "target": 40,
+  "keywords": {
+    "core": [
+      "womenswear cardigan"
+    ],
+    "modifiers": [
+      "relaxed fit",
+      "drop shoulder",
+      "wool",
+      "rib knit",
+      "earth tone"
+    ],
+    "qualifiers": [],
+    "season": "AW26"
+  },
+  "queries": [
+    "womenswear cardigan AW26",
+    "relaxed fit womenswear cardigan AW26",
+    "drop shoulder womenswear cardigan AW26",
+    "wool womenswear cardigan AW26",
+    "rib knit womenswear cardigan AW26",
+    "earth tone womenswear cardigan AW26"
+  ],
+  "directions": [
+    {
+      "name": "Cocoon Wrap　茧型开衫",
+      "terms": [
+        "cocoon shape",
+        "wool",
+        "relaxed fit"
+      ],
+      "queries": [
+        "cocoon shape womenswear cardigan AW26",
+        "wool womenswear cardigan AW26",
+        "relaxed fit womenswear cardigan AW26"
+      ],
+      "directions": [
+        {
+          "name": "Cocoon Wrap　茧型开衫",
+          "terms": [
+            "cocoon shape",
+            "wool",
+            "relaxed fit"
+          ]
+        },
+        {
+          "name": "Fine Rib　细罗纹",
+          "terms": [
+            "rib knit",
+            "fine gauge",
+            "earth tone"
+          ]
+        }
+      ],
+      "quota": 20
+    },
+    {
+      "name": "Fine Rib　细罗纹",
+      "terms": [
+        "rib knit",
+        "fine gauge",
+        "earth tone"
+      ],
+      "queries": [
+        "rib knit womenswear cardigan AW26",
+        "fine gauge womenswear cardigan AW26",
+        "earth tone womenswear cardigan AW26"
+      ],
+      "directions": [
+        {
+          "name": "Cocoon Wrap　茧型开衫",
+          "terms": [
+            "cocoon shape",
+            "wool",
+            "relaxed fit"
+          ]
+        },
+        {
+          "name": "Fine Rib　细罗纹",
+          "terms": [
+            "rib knit",
+            "fine gauge",
+            "earth tone"
+          ]
+        }
+      ],
+      "quota": 20
+    }
+  ],
+  "brand_queries": [],
+  "channels": [
+    {
+      "key": "brand",
+      "name": "品牌官网",
+      "mode": "auto",
+      "quota": 12,
+      "license": "内部参考",
+      "note": "仅作内部对标。交付 PPT 必须保留 Sources 页并注明品牌，任何情况下不得当作原创款呈现给客户。"
+    },
+    {
+      "key": "pinterest",
+      "name": "Pinterest",
+      "mode": "auto-api",
+      "quota": 16,
+      "license": "官方 API",
+      "note": "只走官方 API，保留 pin 链接与作者署名；不抓网页、不绕登录。"
+    },
+    {
+      "key": "wgsn",
+      "name": "WGSN / Fashion Snoops",
+      "mode": "manual",
+      "quota": 12,
+      "license": "订阅制，ToS 禁止抓取",
+      "note": "佘吉只产出选片清单（栏目路径 + 关键词 + 目标张数），由持账号的同事手动导出后放进 02 的素材目录。"
+    }
+  ],
+  "unmapped": [],
+  "approved": true
+}

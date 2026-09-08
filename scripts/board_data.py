@@ -17,9 +17,10 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import date
 from pathlib import Path
 
-VERSION = "2026-09-08a"
+VERSION = "2026-09-08b"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from intake import REQUIRED, is_filled          # noqa: E402  单一事实来源，别抄第二份
@@ -36,6 +37,16 @@ NODES = [
     ("07", "出 PPT", "build_deck.py"),
     ("08", "复盘沉淀", None),
 ]
+
+
+def days_left(due, today=None):
+    """离交付日还有几天。认不出日期就返回 None，不猜。"""
+    text = str(due or "").strip()
+    try:
+        year, month, day = (int(part) for part in text.replace("/", "-").split("-")[:3])
+        return (date(year, month, day) - (today or date.today())).days
+    except (ValueError, TypeError):
+        return None
 
 
 def read_json(path):
@@ -110,6 +121,8 @@ def scan_one(folder):
         "raw_request": intake.get("raw_request", ""),
         "fields": {k: v for k, v in fields.items() if is_filled(v)},
         "open_questions": intake.get("open_questions", []),
+        "due": fields.get("交付日", ""),
+        "days_left": days_left(fields.get("交付日")),
         "node": node,
         "status": status,
         "why": why,
@@ -140,15 +153,44 @@ def main():
             if one:
                 requests.append(one)
 
+    # 逾期的排最前，其次按剩余天数；认不出交期的排最后 —— 一位主管挂三张单时，
+    # 「先做哪张」是这个视图唯一要回答的问题。
+    def urgency(request):
+        left = request["days_left"]
+        done = request["node"] >= "07"
+        return (0 if (left is not None and left < 0 and not done) else 1,
+                left if left is not None else 9999)
+
+    requests.sort(key=urgency)
+
+    warnings = []
+    seen = {}
+    for request in requests:
+        if request["req_id"] in seen:
+            warnings.append(f"req_id 重号：{request['req_id']} —— "
+                            f"新建时加 --tag 区分，否则历史检索会把两张单当成一张")
+        seen[request["req_id"]] = True
+        if not request["requester"].strip():
+            warnings.append(f"{request['req_id']} 没填 requester，归不到任何主管名下")
+
     by_requester = {}
     for request in requests:
-        by_requester.setdefault(request["requester"], []).append(request["req_id"])
+        name = request["requester"] or "（未指派）"
+        bucket = by_requester.setdefault(name, {"total": 0, "gate": 0, "overdue": 0, "req_ids": []})
+        bucket["total"] += 1
+        bucket["req_ids"].append(request["req_id"])
+        if request["status"] == "gate":
+            bucket["gate"] += 1
+        if request["days_left"] is not None and request["days_left"] < 0 and request["node"] < "07":
+            bucket["overdue"] += 1
 
     board = {
         "generated_by": f"board_data.py {VERSION}",
         "nodes": [{"n": n, "name": name, "script": script} for n, name, script in NODES],
         "built": [n for n, _, script in NODES if script],
         "requesters": sorted(by_requester),
+        "load": by_requester,
+        "warnings": warnings,
         "requests": requests,
     }
 
@@ -157,6 +199,16 @@ def main():
         Path(args.output).write_text(text, encoding="utf-8")
         print(f"已写出 {args.output}：{len(requests)} 张单，"
               f"{len(by_requester)} 位主管（{'、'.join(sorted(by_requester))}）")
+        for name in sorted(by_requester):
+            load = by_requester[name]
+            bits = [f"在办 {load['total']}"]
+            if load["gate"]:
+                bits.append(f"等你点头 {load['gate']}")
+            if load["overdue"]:
+                bits.append(f"逾期 {load['overdue']}")
+            print(f"  {name}　{'　'.join(bits)}")
+        for line in warnings:
+            print(f"  ⚠ {line}")
     else:
         print(text)
 

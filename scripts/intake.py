@@ -52,13 +52,19 @@ LEVELS = {name: level for name, level, _ in FIELDS}
 HINTS = {name: hint for name, _, hint in FIELDS}
 
 
-def blank_intake():
+def blank_intake(tag="", requester=""):
+    """tag 是同一天开多张单时用来区分的后缀。
+
+    没有它，一位主管一天开两张单会拿到同一个 req_id，历史相似度检索会把
+    两张不同的单当成同一张跳过。
+    """
+    suffix = f"-{tag.strip().upper()}" if tag.strip() else ""
     return {
         "meta": {
-            "req_id": f"REQ-{date.today():%Y-%m%d}",
+            "req_id": f"REQ-{date.today():%Y-%m%d}{suffix}",
             "project": "",
             "client": "",
-            "requester": "陈主管",
+            "requester": requester or "",
             "date": f"{date.today():%Y-%m-%d}",
         },
         "raw_request": "（陈主管原话，原样抄录，不要改写）",
@@ -255,6 +261,8 @@ def main():
     parser = argparse.ArgumentParser(description="节点 00 · 需求接单与结构化")
     parser.add_argument("intake", nargs="?", help="需求单 JSON")
     parser.add_argument("--new", action="store_true", help="生成空白需求单")
+    parser.add_argument("--tag", default="", help="req_id 后缀，同一天多张单靠它区分，例：SEED")
+    parser.add_argument("--requester", default="", help="布置需求的主管姓名")
     parser.add_argument("-o", "--output", help="--new / --to-brief 的输出路径")
     parser.add_argument("--history", help="历史项目根目录，用于找相似案例")
     parser.add_argument("--to-brief", metavar="BRIEF", help="写入 brief.json")
@@ -268,7 +276,8 @@ def main():
         return
 
     if args.new:
-        text = json.dumps(blank_intake(), ensure_ascii=False, indent=2)
+        text = json.dumps(blank_intake(args.tag, args.requester),
+                           ensure_ascii=False, indent=2)
         if args.output:
             Path(args.output).write_text(text, encoding="utf-8")
             print(f"已生成空白需求单：{args.output}")

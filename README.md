@@ -166,6 +166,11 @@ store, so several people see the same state and a republish does not clear it.
 The page cannot read anyone's `ledger.json`, so its collection figures are a
 snapshot taken when it was published.
 
+One supervisor can have several requests open at once, so the board sorts by
+deadline with overdue first, and each supervisor's chip carries the counts that
+actually need acting on — how many are waiting on them, how many have slipped.
+The scanner also reports duplicate `req_id`s and requests with no requester.
+
 The supervisor filter is a filter, not isolation — everyone sees every request.
 Real per-supervisor separation needs viewer identity, which this account's
 artifact runtime does not offer.
