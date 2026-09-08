@@ -136,6 +136,7 @@ advances a node on its own.
 | 01 检索策略 | `scripts/search_plan.py` | `intake.json` → `plan.json` |
 | 02 素材采集 | `scripts/collect.py`, `scripts/brand_collect.mjs` | `plan.json` + 图 → `ledger.json` + 分方向素材目录 |
 | — 看板数据 | `scripts/board_data.py` | `projects/` → `board.json` |
+| — 本地部署 | `scripts/serve.py` | 本机起服务，主管用浏览器看 |
 | 07 出 PPT | `scripts/build_deck.py` | `brief.json` + `.potx` 模版 → 交付 PPT |
 | — 诊断 | `scripts/check_pptx.py`, `scripts/dump_template.py` | 查 PPT 结构 / 看模版排版 |
 
@@ -175,6 +176,26 @@ One supervisor can have several requests open at once, so the board sorts by
 deadline with overdue first, and each supervisor's chip carries the counts that
 actually need acting on — how many are waiting on them, how many have slipped.
 The scanner also reports duplicate `req_id`s and requests with no requester.
+
+### Running it locally
+
+```bash
+python -X utf8 scripts/serve.py --host 0.0.0.0 --password <口令>
+```
+
+Serves the same `board/sheji-board.html` off this machine, and the page notices:
+it fetches live data from `/api/board` instead of using its embedded snapshot,
+shows thumbnails of what has actually been collected, and keeps gate sign-offs
+in `board/state.local.json`. Nothing leaves the machine.
+
+**The machine serving this does not need Claude installed** — only Python, from
+the standard library. Claude Code is needed on whichever machine runs 佘吉
+(intake, search plan, collection, deck), which may or may not be the same one.
+Supervisors need nothing but a browser.
+
+`--password` is HTTP Basic over plain HTTP: it keeps colleagues on the LAN from
+wandering in, and is not a security boundary. Do not expose the port to the
+internet; put a TLS reverse proxy in front if it has to be reachable remotely.
 
 The supervisor filter is a filter, not isolation — everyone sees every request.
 Real per-supervisor separation needs viewer identity, which this account's
