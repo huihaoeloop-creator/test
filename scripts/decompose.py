@@ -28,7 +28,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-VERSION = "2026-09-08a"
+VERSION = "2026-09-08c"
 
 try:
     from PIL import Image
@@ -146,7 +146,9 @@ def terms_of(items, top=12):
     """商品标题里反复出现的词。方向对不对，看这个最快。"""
     counter = Counter()
     for item in items:
-        text = f"{item.get('note', '')} {item.get('original_name', '')}".lower()
+        # 去掉扩展名，不然 jpg / png 会稳居高频词榜首，把真正的信号挤下去
+        name = re.sub(r"\.(jpe?g|png|webp|tiff?|bmp)$", "", item.get("original_name", ""), flags=re.I)
+        text = f"{item.get('note', '')} {name}".lower()
         for token in TOKEN.findall(text):
             if token not in STOP and not token.isdigit():
                 counter[token] += 1
@@ -259,6 +261,18 @@ def main():
 
     blocks = build(plan, ledger, args.assets)
 
+    # 已填的判断项要先并回来，再渲染。
+    # 原来只在写文件那一支合并，不给 -o 时就照着空表报"还有 30 项要填" ——
+    # 文件里明明填好了，状态却说没填，这种不一致比少个功能更糟。
+    existing = Path(args.output or Path(args.assets).parent / "03-style") / "style.json"
+    if existing.exists():
+        old_values = {b["name"]: b.get("judgement", {})
+                      for b in json.loads(existing.read_text(encoding="utf-8-sig")).get("directions", [])}
+        for block in blocks:
+            for key, value in old_values.get(block["name"], {}).items():
+                if value and key in block["judgement"]:
+                    block["judgement"][key] = value
+
     if args.colors_only:
         for block in blocks:
             print(f"{block['name']}")
@@ -273,14 +287,6 @@ def main():
         folder = Path(args.output)
         folder.mkdir(parents=True, exist_ok=True)
         path = folder / "style.json"
-        # 已经填过的判断项要保留，不能每次重跑都清空
-        if path.exists():
-            old = {b["name"]: b.get("judgement", {})
-                   for b in json.loads(path.read_text(encoding="utf-8-sig")).get("directions", [])}
-            for block in blocks:
-                for key, value in old.get(block["name"], {}).items():
-                    if value:
-                        block["judgement"][key] = value
         path.write_text(json.dumps(
             {"meta": dict(meta, node="03-style", version=VERSION),
              "judgement_fields": [{"name": n, "hint": h} for n, h in JUDGEMENT],

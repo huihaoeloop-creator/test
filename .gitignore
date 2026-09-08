@@ -6,3 +6,10 @@ blob-report/
 out/
 *.log
 board/state.local.json
+
+# 素材本身不进 git —— 真跑起来是几个 G。台账 ledger.json 才是记录，
+# 图放本地/NAS，靠 collect.py --check 对账
+projects/**/02-assets/**/*.jpg
+projects/**/02-assets/**/*.jpeg
+projects/**/02-assets/**/*.png
+projects/**/02-assets/**/*.webp

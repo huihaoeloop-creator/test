@@ -1,0 +1,523 @@
+{
+  "meta": {
+    "req_id": "REQ-2026-0908-SEED",
+    "project": "Seed 女装 秋冬趋势与款式推荐",
+    "client": "Seed（澳洲女装品牌）",
+    "requester": "陈主管",
+    "date": "2026-09-08",
+    "node": "03-style",
+    "version": "2026-09-08c"
+  },
+  "judgement_fields": [
+    {
+      "name": "廓形",
+      "hint": "Oversized 落肩 / 修身 / 茧型…这一堆图的共性是什么"
+    },
+    {
+      "name": "领型",
+      "hint": "圆领 / V 领 / 高领 / 立领"
+    },
+    {
+      "name": "克重",
+      "hint": "细针 12gg / 中针 7gg / 粗针 3gg，或者 gsm"
+    },
+    {
+      "name": "工艺",
+      "hint": "绞花 / 抽针 / 提花 / 嵌花 / 起绒"
+    },
+    {
+      "name": "袖型",
+      "hint": "落肩 / 插肩 / 装袖 / 灯笼"
+    },
+    {
+      "name": "长度",
+      "hint": "短款 / 常规 / 长款，或者具体厘米"
+    }
+  ],
+  "directions": [
+    {
+      "name": "Elevated Everyday　精致基础",
+      "quota": 24,
+      "collected": 5,
+      "channels": {
+        "client": 5
+      },
+      "palette": [
+        {
+          "hex": "#969289",
+          "rgb": [
+            150,
+            146,
+            137
+          ],
+          "share": 0.326
+        },
+        {
+          "hex": "#C4BCAF",
+          "rgb": [
+            196,
+            188,
+            175
+          ],
+          "share": 0.49
+        },
+        {
+          "hex": "#464442",
+          "rgb": [
+            70,
+            68,
+            66
+          ],
+          "share": 0.182
+        },
+        {
+          "hex": "#DCD8D0",
+          "rgb": [
+            220,
+            216,
+            208
+          ],
+          "share": 0.002
+        }
+      ],
+      "palette_warning": "",
+      "terms": [
+        {
+          "term": "merino",
+          "count": 4
+        },
+        {
+          "term": "crew",
+          "count": 3
+        },
+        {
+          "term": "fine",
+          "count": 2
+        },
+        {
+          "term": "gauge",
+          "count": 2
+        },
+        {
+          "term": "neck",
+          "count": 2
+        },
+        {
+          "term": "tonal",
+          "count": 2
+        },
+        {
+          "term": "wool",
+          "count": 1
+        },
+        {
+          "term": "rib",
+          "count": 1
+        },
+        {
+          "term": "soft",
+          "count": 1
+        }
+      ],
+      "terms_hit": [
+        "merino",
+        "fine gauge",
+        "tonal",
+        "crew neck"
+      ],
+      "terms_missing": [],
+      "judgement": {
+        "廓形": "relaxed straight",
+        "领型": "crew neck",
+        "克重": "fine gauge 12gg merino",
+        "工艺": "plain jersey with rib trims",
+        "袖型": "set-in sleeve",
+        "长度": "hip length"
+      }
+    },
+    {
+      "name": "Oversized Comfort　宽松舒适",
+      "quota": 24,
+      "collected": 4,
+      "channels": {
+        "client": 4
+      },
+      "palette": [
+        {
+          "hex": "#79767F",
+          "rgb": [
+            121,
+            118,
+            127
+          ],
+          "share": 0.407
+        },
+        {
+          "hex": "#5B5861",
+          "rgb": [
+            91,
+            88,
+            97
+          ],
+          "share": 0.407
+        },
+        {
+          "hex": "#424040",
+          "rgb": [
+            66,
+            64,
+            64
+          ],
+          "share": 0.182
+        },
+        {
+          "hex": "#B2B0B4",
+          "rgb": [
+            178,
+            176,
+            180
+          ],
+          "share": 0.004
+        }
+      ],
+      "palette_warning": "",
+      "terms": [
+        {
+          "term": "oversized",
+          "count": 2
+        },
+        {
+          "term": "drop",
+          "count": 2
+        },
+        {
+          "term": "shoulder",
+          "count": 2
+        },
+        {
+          "term": "chunky",
+          "count": 2
+        },
+        {
+          "term": "cocoon",
+          "count": 2
+        },
+        {
+          "term": "shape",
+          "count": 1
+        },
+        {
+          "term": "relaxed",
+          "count": 1
+        },
+        {
+          "term": "gauge",
+          "count": 1
+        },
+        {
+          "term": "wool",
+          "count": 1
+        }
+      ],
+      "terms_hit": [
+        "oversized",
+        "drop shoulder",
+        "chunky gauge",
+        "cocoon shape"
+      ],
+      "terms_missing": [],
+      "judgement": {
+        "廓形": "oversized cocoon",
+        "领型": "wide crew neck",
+        "克重": "chunky 3gg",
+        "工艺": "plain stocking stitch",
+        "袖型": "drop shoulder",
+        "长度": "longline, mid-thigh"
+      }
+    },
+    {
+      "name": "Textural Craft　肌理手作",
+      "quota": 24,
+      "collected": 5,
+      "channels": {
+        "client": 5
+      },
+      "palette": [
+        {
+          "hex": "#7A6047",
+          "rgb": [
+            122,
+            96,
+            71
+          ],
+          "share": 0.814
+        },
+        {
+          "hex": "#43403C",
+          "rgb": [
+            67,
+            64,
+            60
+          ],
+          "share": 0.182
+        },
+        {
+          "hex": "#B9ADA0",
+          "rgb": [
+            185,
+            173,
+            160
+          ],
+          "share": 0.004
+        }
+      ],
+      "palette_warning": "",
+      "terms": [
+        {
+          "term": "cable",
+          "count": 3
+        },
+        {
+          "term": "bobble",
+          "count": 2
+        },
+        {
+          "term": "mohair",
+          "count": 2
+        },
+        {
+          "term": "pointelle",
+          "count": 2
+        },
+        {
+          "term": "brushed",
+          "count": 1
+        },
+        {
+          "term": "crew",
+          "count": 1
+        },
+        {
+          "term": "detail",
+          "count": 1
+        },
+        {
+          "term": "hand-look",
+          "count": 1
+        }
+      ],
+      "terms_hit": [
+        "cable knit",
+        "pointelle",
+        "bobble",
+        "brushed mohair"
+      ],
+      "terms_missing": [],
+      "judgement": {
+        "廓形": "relaxed straight",
+        "领型": "round neck",
+        "克重": "mid gauge 7gg brushed mohair",
+        "工艺": "cable panels with bobble detail",
+        "袖型": "set-in sleeve",
+        "长度": "hip length"
+      }
+    },
+    {
+      "name": "Sporty Layer　运动叠穿",
+      "quota": 24,
+      "collected": 4,
+      "channels": {
+        "client": 4
+      },
+      "palette": [
+        {
+          "hex": "#3A5B7A",
+          "rgb": [
+            58,
+            91,
+            122
+          ],
+          "share": 0.407
+        },
+        {
+          "hex": "#BC603B",
+          "rgb": [
+            188,
+            96,
+            59
+          ],
+          "share": 0.407
+        },
+        {
+          "hex": "#44403D",
+          "rgb": [
+            68,
+            64,
+            61
+          ],
+          "share": 0.182
+        },
+        {
+          "hex": "#D8AF9D",
+          "rgb": [
+            216,
+            175,
+            157
+          ],
+          "share": 0.002
+        },
+        {
+          "hex": "#98A9B6",
+          "rgb": [
+            152,
+            169,
+            182
+          ],
+          "share": 0.002
+        }
+      ],
+      "palette_warning": "",
+      "terms": [
+        {
+          "term": "half",
+          "count": 2
+        },
+        {
+          "term": "zip",
+          "count": 2
+        },
+        {
+          "term": "funnel",
+          "count": 2
+        },
+        {
+          "term": "neck",
+          "count": 2
+        },
+        {
+          "term": "raglan",
+          "count": 2
+        },
+        {
+          "term": "sleeve",
+          "count": 2
+        },
+        {
+          "term": "blocking",
+          "count": 1
+        },
+        {
+          "term": "block",
+          "count": 1
+        }
+      ],
+      "terms_hit": [
+        "half zip",
+        "funnel neck",
+        "colour blocking",
+        "raglan sleeve"
+      ],
+      "terms_missing": [],
+      "judgement": {
+        "廓形": "semi-fitted",
+        "领型": "funnel neck with half zip",
+        "克重": "mid gauge 7gg",
+        "工艺": "colour blocked panels",
+        "袖型": "raglan sleeve",
+        "长度": "hip length"
+      }
+    },
+    {
+      "name": "Statement Colour　色彩表达",
+      "quota": 24,
+      "collected": 4,
+      "channels": {
+        "client": 4
+      },
+      "palette": [
+        {
+          "hex": "#234E9C",
+          "rgb": [
+            35,
+            78,
+            156
+          ],
+          "share": 0.408
+        },
+        {
+          "hex": "#B03530",
+          "rgb": [
+            176,
+            53,
+            48
+          ],
+          "share": 0.408
+        },
+        {
+          "hex": "#4B4648",
+          "rgb": [
+            75,
+            70,
+            72
+          ],
+          "share": 0.182
+        },
+        {
+          "hex": "#93A7C8",
+          "rgb": [
+            147,
+            167,
+            200
+          ],
+          "share": 0.002
+        }
+      ],
+      "palette_warning": "",
+      "terms": [
+        {
+          "term": "intarsia",
+          "count": 2
+        },
+        {
+          "term": "argyle",
+          "count": 2
+        },
+        {
+          "term": "stripe",
+          "count": 2
+        },
+        {
+          "term": "vest",
+          "count": 1
+        },
+        {
+          "term": "saturated",
+          "count": 1
+        },
+        {
+          "term": "crew",
+          "count": 1
+        },
+        {
+          "term": "bold",
+          "count": 1
+        }
+      ],
+      "terms_hit": [
+        "intarsia",
+        "stripe",
+        "argyle",
+        "saturated"
+      ],
+      "terms_missing": [],
+      "judgement": {
+        "廓形": "straight boxy",
+        "领型": "crew neck",
+        "克重": "mid gauge 7gg",
+        "工艺": "intarsia and horizontal stripe",
+        "袖型": "set-in sleeve",
+        "长度": "cropped at waist"
+      }
+    }
+  ]
+}

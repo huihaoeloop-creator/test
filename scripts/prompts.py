@@ -162,7 +162,10 @@ def one_prompt(brief, direction, judgement, palette, view, index, terms=()):
     想要比这更大的差异，那是设计决定，去 style.json 里分成不同方向或加要素。
     """
     bits = []
-    category = brief.get("品类", "knitwear")
+    # 品类要用节点 01 翻好的英文（womenswear sweater），不是需求单里的中文。
+    # 中文丢给 MJ / Ideogram 效果很差 —— 翻译在节点 01 已经做过一次，
+    # 这里再从中文取一遍等于把那一步的成果丢掉。
+    category = brief.get("_core_en") or brief.get("品类", "knitwear")
     bits.append(f"{judgement.get('廓形') or ''} {category}".strip())
 
     if terms:
@@ -299,6 +302,9 @@ def write_files(folder, blocks, tools, meta):
     for key in tools:
         tool = TOOLS[key]
         head = [f"{tool['name']} —— {tool['role']}", tool["note"], ""]
+        if key == "jimeng":
+            head.insert(2, "注意：这里给的还是英文 prompt。即梦的长处是中文输入，"
+                           "中文 prompt 生成还没做——直接用等于浪费它的优势。")
         if tool.get("env"):
             head.insert(2, f"key 放环境变量 {tool['env']}，不进文件、不进仓库。")
 
@@ -340,6 +346,11 @@ def main():
     plan = None
     if args.plan and Path(args.plan).exists():
         plan = json.loads(Path(args.plan).read_text(encoding="utf-8-sig"))
+
+    if plan:
+        core = plan.get("keywords", {}).get("core", [])
+        if core:
+            brief["_core_en"] = " ".join(core)
 
     tools = args.tool or sorted(TOOLS)
     blocks = build(style, brief, tools, args.per_direction, args.ratio,
