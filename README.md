@@ -150,3 +150,12 @@ decided at run time: brand sites are internal reference only and must stay
 credited on the Sources page, Pinterest goes through the official API,
 WGSN / Fashion Snoops produce a pick list for a licensed human to export, and
 Instagram is not collected at all.
+
+### 看板
+
+`board/sheji-board.html` is the published board — the nine nodes, the request in
+flight, the review gates and the channel rules, for supervisors and managers to
+read. It is republished to the same URL as nodes get built, and its gate
+confirmations and notes live in the artifact's own shared store, so they survive
+a republish. It cannot read `ledger.json` off anyone's machine: collection
+figures on it are a snapshot taken at publish time.

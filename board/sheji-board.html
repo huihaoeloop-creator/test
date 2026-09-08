@@ -1,0 +1,466 @@
+<title>佘吉工作台</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --ground:#F4F3EF; --surface:#FBFAF8; --sunk:#EDEBE4;
+  --line:#DFDCD3; --line-strong:#C7C3B7;
+  --ink:#1B1D1A; --ink-2:#43463F; --muted:#6C6F67;
+  --accent:#2E4F49; --accent-soft:#E2EAE7;
+  --done:#4C7A5A; --done-soft:#E3EDE5;
+  --wait:#8F6D16; --wait-soft:#F2EAD4;
+  --block:#9E4230; --block-soft:#F5E2DD;
+  --shadow:0 1px 2px rgba(27,29,26,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#131513; --surface:#1B1E1B; --sunk:#101210;
+    --line:#2F332F; --line-strong:#454A44;
+    --ink:#E9E7E0; --ink-2:#C3C2BA; --muted:#96998F;
+    --accent:#7FB4A9; --accent-soft:#1E2C29;
+    --done:#7BAA88; --done-soft:#1C2A20;
+    --wait:#C9A34A; --wait-soft:#2C2617;
+    --block:#C8705B; --block-soft:#2E1D18;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#131513; --surface:#1B1E1B; --sunk:#101210;
+  --line:#2F332F; --line-strong:#454A44;
+  --ink:#E9E7E0; --ink-2:#C3C2BA; --muted:#96998F;
+  --accent:#7FB4A9; --accent-soft:#1E2C29;
+  --done:#7BAA88; --done-soft:#1C2A20;
+  --wait:#C9A34A; --wait-soft:#2C2617;
+  --block:#C8705B; --block-soft:#2E1D18;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans","PingFang SC","Microsoft YaHei","Noto Sans CJK SC","Hiragino Sans GB",system-ui,sans-serif;
+  font-size:15px; line-height:1.6; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"IBM Plex Mono","SFMono-Regular",Consolas,monospace}
+.wrap{max-width:1080px; margin:0 auto; padding:40px 24px 80px}
+h1,h2,h3{text-wrap:balance; margin:0}
+a{color:var(--accent)}
+
+/* ---------- header ---------- */
+.masthead{display:flex; flex-wrap:wrap; gap:24px; align-items:flex-end;
+  justify-content:space-between; padding-bottom:20px; border-bottom:2px solid var(--ink)}
+.eyebrow{font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--muted); font-weight:600}
+h1{font-size:30px; font-weight:700; letter-spacing:-.02em; margin-top:6px}
+.masthead p{margin:6px 0 0; color:var(--ink-2); max-width:52ch}
+.stamp{text-align:right; font-size:12px; color:var(--muted); line-height:1.7}
+.stamp b{display:block; color:var(--ink); font-size:13px; font-weight:600}
+
+section{margin-top:44px}
+.sec-head{display:flex; align-items:baseline; gap:12px; margin-bottom:18px}
+h2{font-size:13px; font-weight:600; letter-spacing:.14em; text-transform:uppercase}
+.sec-head span{font-size:13px; color:var(--muted)}
+
+/* ---------- pipeline ---------- */
+.pipe{position:relative; padding-left:34px}
+.pipe::before{content:""; position:absolute; left:11px; top:12px; bottom:12px;
+  width:2px; background:var(--line)}
+.node{position:relative; display:grid; grid-template-columns:1fr auto; gap:8px 20px;
+  align-items:start; padding:13px 16px; margin-bottom:8px;
+  background:var(--surface); border:1px solid var(--line); border-radius:3px}
+.node::before{content:attr(data-n); position:absolute; left:-34px; top:14px;
+  width:24px; height:24px; border-radius:50%; display:grid; place-items:center;
+  font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:600;
+  background:var(--sunk); color:var(--muted);
+  border:2px solid var(--line-strong)}
+.node.built::before{background:var(--accent); color:var(--ground); border-color:var(--accent)}
+.node.built{border-left:3px solid var(--accent)}
+.node.todo{background:transparent; border-style:dashed}
+.node h3{font-size:15px; font-weight:600}
+.node .io{grid-column:1; font-size:13px; color:var(--muted); margin-top:2px}
+.node .io b{color:var(--ink-2); font-weight:500}
+.node .file{grid-column:2; grid-row:1/3; font-size:12px; color:var(--accent);
+  white-space:nowrap; padding-top:2px}
+.node.todo .file{color:var(--muted)}
+
+/* ---------- chips ---------- */
+.chip{display:inline-block; font-size:11px; font-weight:600; letter-spacing:.04em;
+  padding:2px 8px; border-radius:2px; vertical-align:2px; margin-left:8px}
+.chip.done{background:var(--done-soft); color:var(--done)}
+.chip.wait{background:var(--wait-soft); color:var(--wait)}
+.chip.block{background:var(--block-soft); color:var(--block)}
+.chip.off{background:var(--sunk); color:var(--muted)}
+
+/* ---------- gates ---------- */
+.gates{display:grid; gap:1px; background:var(--line); border:1px solid var(--line)}
+.gate{background:var(--surface); padding:14px 16px; display:grid;
+  grid-template-columns:1fr auto; gap:10px 18px; align-items:center}
+.gate .g-name{font-weight:600}
+.gate .g-why{grid-column:1; font-size:13px; color:var(--muted); margin-top:-4px}
+.gate .g-act{grid-column:2; grid-row:1/3; display:flex; gap:8px; align-items:center}
+.gate.signed{background:var(--done-soft)}
+.gate .g-sig{grid-column:1/-1; font-size:12px; color:var(--done); font-weight:500}
+input[type=text]{font:inherit; font-size:13px; padding:5px 9px; width:120px;
+  background:var(--ground); color:var(--ink);
+  border:1px solid var(--line-strong); border-radius:2px}
+button{font:inherit; font-size:13px; font-weight:600; padding:6px 14px; cursor:pointer;
+  background:var(--accent); color:var(--ground); border:1px solid var(--accent);
+  border-radius:2px}
+button.ghost{background:transparent; color:var(--muted); border-color:var(--line-strong)}
+button:disabled{opacity:.45; cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+/* ---------- request ---------- */
+.req{background:var(--surface); border:1px solid var(--line); border-radius:3px; padding:20px 22px}
+.req-top{display:flex; flex-wrap:wrap; gap:6px 14px; align-items:baseline;
+  padding-bottom:14px; border-bottom:1px solid var(--line)}
+.req-top h3{font-size:18px; font-weight:600}
+.req-top .id{font-size:12px; color:var(--muted)}
+.quote{margin:14px 0 18px; padding-left:14px; border-left:2px solid var(--line-strong);
+  color:var(--ink-2)}
+.fields{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px 22px}
+.f-k{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+.f-v{font-size:14px; margin-top:1px}
+.f-v.open{color:var(--muted); font-style:italic}
+
+/* ---------- directions ---------- */
+.dirs{display:grid; gap:1px; background:var(--line); border:1px solid var(--line)}
+.dir{background:var(--surface); padding:13px 16px;
+  display:grid; grid-template-columns:1fr 130px 62px; gap:4px 16px; align-items:center}
+.dir .d-name{font-weight:600; font-size:14px}
+.dir .d-terms{grid-column:1; font-size:12px; color:var(--muted); margin-top:-2px}
+.meter{height:6px; background:var(--sunk); border-radius:3px; overflow:hidden}
+.meter i{display:block; height:100%; background:var(--accent); border-radius:3px}
+.dir .d-num{text-align:right; font-size:13px; font-variant-numeric:tabular-nums; color:var(--muted)}
+.dir .d-num b{color:var(--ink)}
+
+/* ---------- table ---------- */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse; width:100%; min-width:560px; font-size:13px}
+th{text-align:left; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; padding:0 14px 8px 0;
+  border-bottom:1px solid var(--line-strong)}
+td{padding:11px 14px 11px 0; border-bottom:1px solid var(--line); vertical-align:top}
+td:first-child{font-weight:600; white-space:nowrap}
+.num{text-align:right; font-variant-numeric:tabular-nums; padding-right:0}
+
+/* ---------- notes ---------- */
+.note-row{display:flex; gap:8px; margin-top:10px}
+.note-row input{flex:1; width:auto}
+.notes{list-style:none; margin:12px 0 0; padding:0; display:grid; gap:6px}
+.notes li{font-size:13px; padding:8px 12px; background:var(--sunk); border-radius:2px}
+.notes .who{font-weight:600}
+.notes .when{color:var(--muted); font-size:11px; margin-left:6px}
+
+/* ---------- sync ---------- */
+.sync{background:var(--accent-soft); border:1px solid var(--accent); border-radius:3px;
+  padding:18px 20px}
+.sync h3{font-size:14px; font-weight:600; margin-bottom:8px}
+.sync ol{margin:0; padding-left:20px; display:grid; gap:7px}
+.sync li{color:var(--ink-2)}
+.sync b{color:var(--ink)}
+
+.foot{margin-top:44px; padding-top:16px; border-top:1px solid var(--line);
+  font-size:12px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 20px;
+  justify-content:space-between}
+#live{font-size:12px; color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+@media (max-width:620px){
+  .node{grid-template-columns:1fr}
+  .node .file{grid-column:1; grid-row:auto}
+  .dir{grid-template-columns:1fr 70px}
+  .dir .meter{display:none}
+  .gate{grid-template-columns:1fr}
+  .gate .g-act{grid-column:1; grid-row:auto}
+}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div>
+    <div class="eyebrow">设计 AGENT · 工作流</div>
+    <h1>佘吉工作台</h1>
+    <p>九个节点，每一步都要人点头才往下走。这块板子对设计主管、经理、总经理开放。</p>
+  </div>
+  <div class="stamp">
+    <b>快照 2026-09-08</b>
+    管道 4/9 已建成<br>
+    在办需求 1 件
+  </div>
+</header>
+
+<section>
+  <div class="sec-head"><h2>流程管道</h2><span>编号即依赖顺序——上一节点的产出是下一节点的输入</span></div>
+  <div class="pipe">
+
+    <div class="node built" data-n="00">
+      <h3>需求接单<span class="chip done">已建成</span></h3>
+      <div class="io"><b>入</b> 陈主管一句话　<b>出</b> intake.json → brief.json</div>
+      <div class="file mono">intake.py</div>
+    </div>
+
+    <div class="node built" data-n="01">
+      <h3>检索策略<span class="chip done">已建成</span></h3>
+      <div class="io"><b>入</b> intake.json　<b>出</b> plan.json（中英词表、方向、配额、合规边界）</div>
+      <div class="file mono">search_plan.py</div>
+    </div>
+
+    <div class="node built" data-n="02">
+      <h3>素材采集<span class="chip done">已建成</span></h3>
+      <div class="io"><b>入</b> plan.json + 图　<b>出</b> ledger.json 出处台账 + 分方向素材目录</div>
+      <div class="file mono">collect.py</div>
+    </div>
+
+    <div class="node todo" data-n="03">
+      <h3>风格解构<span class="chip off">未建</span></h3>
+      <div class="io"><b>入</b> ledger.json　<b>出</b> 五个方向的风格要素表（廓形／领型／克重／配色）</div>
+      <div class="file mono">—</div>
+    </div>
+
+    <div class="node todo" data-n="04">
+      <h3>出图指令<span class="chip off">未建</span></h3>
+      <div class="io"><b>入</b> 风格要素表　<b>出</b> 各生图工具的 prompt 组</div>
+      <div class="file mono">—</div>
+    </div>
+
+    <div class="node todo" data-n="05">
+      <h3>批量生成<span class="chip off">未建</span></h3>
+      <div class="io"><b>入</b> prompt 组　<b>出</b> 生成图（这些才是可交付的图）</div>
+      <div class="file mono">—</div>
+    </div>
+
+    <div class="node todo" data-n="06">
+      <h3>后期处理<span class="chip off">未建</span></h3>
+      <div class="io"><b>入</b> 生成图　<b>出</b> 去背白底图，按 <span class="mono">款号_f / 款号_b</span> 命名</div>
+      <div class="file mono">—</div>
+    </div>
+
+    <div class="node built" data-n="07">
+      <h3>出 PPT<span class="chip done">已建成</span></h3>
+      <div class="io"><b>入</b> brief.json + 陈主管的 .potx 模版　<b>出</b> 可交付 PPT（首末页原样，字体字号取自模版第二页）</div>
+      <div class="file mono">build_deck.py</div>
+    </div>
+
+    <div class="node todo" data-n="08">
+      <h3>复盘沉淀<span class="chip off">未建</span></h3>
+      <div class="io"><b>入</b> 客户采纳结果　<b>出</b> 回写历史库，供下次接单时命中相似案例</div>
+      <div class="file mono">—</div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><h2>在办需求</h2><span>REQ-2026-0908-SEED</span></div>
+  <div class="req">
+    <div class="req-top">
+      <h3>Seed 女装 秋冬趋势与款式推荐</h3>
+      <span class="id mono">REQ-2026-0908-SEED · 陈主管 · 2026-09-08</span>
+    </div>
+    <p class="quote">「Seed 女装做一个秋冬的趋势和款式推荐」</p>
+    <div class="fields">
+      <div><div class="f-k">客户</div><div class="f-v">Seed（澳洲女装品牌）</div></div>
+      <div><div class="f-k">品类</div><div class="f-v">女装毛衣 · womenswear sweater</div></div>
+      <div><div class="f-k">季节</div><div class="f-v">2027 秋冬 · AW27（南半球）</div></div>
+      <div><div class="f-k">交付日</div><div class="f-v">2026-09-08</div></div>
+      <div><div class="f-k">数量</div><div class="f-v">5 个方向 × 4 款 = 20 款</div></div>
+      <div><div class="f-k">采集目标</div><div class="f-v">120 张（20 款 × 前后图 ÷ 选片比 3:1）</div></div>
+      <div><div class="f-k">廓形 / 色彩 / 面料</div><div class="f-v open">不设限，由佘吉在方向里提</div></div>
+      <div><div class="f-k">客群 / 价格带</div><div class="f-v open">不设限</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><h2>五个趋势方向</h2><span>方向是佘吉的提案，等 WGSN 导出后回头校准</span></div>
+  <div class="dirs">
+    <div class="dir">
+      <div class="d-name">Elevated Everyday　精致基础</div>
+      <div class="d-terms mono">merino · fine gauge · tonal · crew neck</div>
+      <div class="meter"><i style="width:0%"></i></div>
+      <div class="d-num"><b>0</b>/24</div>
+    </div>
+    <div class="dir">
+      <div class="d-name">Oversized Comfort　宽松舒适</div>
+      <div class="d-terms mono">oversized · drop shoulder · chunky gauge · cocoon</div>
+      <div class="meter"><i style="width:0%"></i></div>
+      <div class="d-num"><b>0</b>/24</div>
+    </div>
+    <div class="dir">
+      <div class="d-name">Textural Craft　肌理手作</div>
+      <div class="d-terms mono">cable knit · pointelle · bobble · brushed mohair</div>
+      <div class="meter"><i style="width:0%"></i></div>
+      <div class="d-num"><b>0</b>/24</div>
+    </div>
+    <div class="dir">
+      <div class="d-name">Sporty Layer　运动叠穿</div>
+      <div class="d-terms mono">half zip · funnel neck · colour blocking · raglan</div>
+      <div class="meter"><i style="width:0%"></i></div>
+      <div class="d-num"><b>0</b>/24</div>
+    </div>
+    <div class="dir">
+      <div class="d-name">Statement Colour　色彩表达</div>
+      <div class="d-terms mono">intarsia · stripe · argyle · saturated</div>
+      <div class="meter"><i style="width:0%"></i></div>
+      <div class="d-num"><b>0</b>/24</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><h2>人工审核闸</h2><span id="live">正在连接共享状态…</span></div>
+  <div class="gates" id="gates"></div>
+  <p style="font-size:12px;color:var(--muted);margin-top:10px">
+    署名是自己填的，页面认不到人头——这不是认证过的签字，只是让大家知道谁点的。
+    需要可审计的留痕，走 git commit 那条路。
+  </p>
+</section>
+
+<section>
+  <div class="sec-head"><h2>渠道与合规</h2><span>边界写在 plan.json 里，不在跑的时候临场判断</span></div>
+  <div class="scroll"><table>
+    <thead><tr><th>渠道</th><th>佘吉能做什么</th><th>约束</th><th class="num">配额</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>品牌官网</td>
+        <td>可自动采集</td>
+        <td>仅内部对标。Sources 页必须注明品牌，<b>绝不能当原创款给客户</b></td>
+        <td class="num">36</td>
+      </tr>
+      <tr>
+        <td>Pinterest</td>
+        <td>只走官方 API</td>
+        <td>官方 API 无全站搜索——人先在画板选片，脚本再拉画板。保留 pin 链接与作者</td>
+        <td class="num">48</td>
+      </tr>
+      <tr>
+        <td>WGSN / Fashion Snoops</td>
+        <td>只出选片清单</td>
+        <td>订阅制且 ToS 禁止抓取。<b>不接受账号密码</b>，由持证同事手动导出</td>
+        <td class="num">36</td>
+      </tr>
+      <tr>
+        <td>Instagram</td>
+        <td>不采集</td>
+        <td>ToS 禁止抓取。人工刷到的只记链接，不入素材库</td>
+        <td class="num">0</td>
+      </tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sec-head"><h2>留言</h2><span>所有人可见，随页面一起保存</span></div>
+  <ul class="notes" id="notes"></ul>
+  <div class="note-row">
+    <input type="text" id="note-who" placeholder="你的名字" maxlength="12">
+    <input type="text" id="note-text" placeholder="写点什么…" maxlength="160">
+    <button id="note-add">留言</button>
+  </div>
+</section>
+
+<section>
+  <div class="sync">
+    <h3>这块板子怎么更新</h3>
+    <ol>
+      <li><b>后面建好的节点会同步进来。</b>每建完一个节点，我把这一页重新发布到<b>同一个链接</b>——你们的书签不用换，刷新就是新的。03 到 06 建好后会从虚线框变成实线。</li>
+      <li><b>闸的确认和留言存在页面自己的共享库里。</b>多人同时开着都能看到彼此的操作，重新发布也不会丢。</li>
+      <li><b>采集进度不会自己动。</b>这页读不到你们电脑上的 <span class="mono">ledger.json</span>——数字是我发布时的快照。跑完采集告诉我，我刷新这一页。</li>
+    </ol>
+  </div>
+</section>
+
+<div class="foot">
+  <span>佘吉 · 设计工作流　管道 4/9 已建成</span>
+  <span class="mono">huihaoeloop-creator/test · claude/claude-chrome-integration-xxq3c0</span>
+</div>
+
+</div>
+
+<script>
+const GATES = [
+  {id:"g1", name:"需求确认单签字", why:"节点 00 → 01。字段齐全、无待确认项，等陈主管签字", state:"wait"},
+  {id:"g2", name:"检索方案确认", why:"节点 01 → 02。检索式与配额要点头，plan.json 的 approved 才置 true", state:"block"},
+  {id:"g3", name:"采集选片确认", why:"节点 02 → 03。120 张收齐后过一遍，剔掉跑偏的", state:"off"},
+  {id:"g4", name:"出图指令确认", why:"节点 04 → 05。prompt 组批量跑之前必须看，跑错一轮成本最高", state:"off"},
+  {id:"g5", name:"交付前终审", why:"节点 07 之后。Sources 页在不在、有没有内部参考图混进交付页", state:"off"},
+];
+const LABEL = {wait:"待签", block:"卡在这里", off:"未到"};
+
+let db = null, state = {gates:{}, notes:[]};
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const stamp = (iso) => { try { return new Date(iso).toLocaleString("zh-CN",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}); } catch { return ""; } };
+
+function renderGates(){
+  $("gates").innerHTML = GATES.map(g => {
+    const sig = state.gates[g.id];
+    const chip = sig ? '<span class="chip done">已确认</span>'
+                     : `<span class="chip ${g.state}">${LABEL[g.state]}</span>`;
+    const act = sig
+      ? `<button class="ghost" data-undo="${g.id}">撤回</button>`
+      : `<input type="text" data-who="${g.id}" placeholder="你的名字" maxlength="12">
+         <button data-sign="${g.id}">确认</button>`;
+    const line = sig
+      ? `<div class="g-sig">${esc(sig.who)} 于 ${stamp(sig.at)} 确认</div>` : "";
+    return `<div class="gate ${sig ? "signed" : ""}">
+      <div class="g-name">${g.name}${chip}</div>
+      <div class="g-why">${g.why}</div>
+      <div class="g-act">${act}</div>${line}</div>`;
+  }).join("");
+}
+
+function renderNotes(){
+  const list = state.notes || [];
+  $("notes").innerHTML = list.length
+    ? list.slice(-30).map(n =>
+        `<li><span class="who">${esc(n.who)}</span><span class="when">${stamp(n.at)}</span><br>${esc(n.text)}</li>`).join("")
+    : `<li style="color:var(--muted)">还没有留言。</li>`;
+}
+
+async function save(){
+  if (!db) return;
+  try { await db.doc("board/state").set(state); }
+  catch (e) { $("live").textContent = e.code === "invalid_argument" ? "你只有查看权限，改不了" : "保存失败，稍后再试"; }
+}
+
+document.addEventListener("click", (event) => {
+  const sign = event.target.closest("[data-sign]");
+  if (sign) {
+    const id = sign.dataset.sign;
+    const who = (document.querySelector(`[data-who="${id}"]`).value || "").trim();
+    if (!who) { document.querySelector(`[data-who="${id}"]`).focus(); return; }
+    state.gates[id] = {who, at:new Date().toISOString()};
+    renderGates(); save(); return;
+  }
+  const undo = event.target.closest("[data-undo]");
+  if (undo) { delete state.gates[undo.dataset.undo]; renderGates(); save(); return; }
+  if (event.target.id === "note-add") {
+    const who = ($("note-who").value || "").trim();
+    const text = ($("note-text").value || "").trim();
+    if (!who || !text) { (who ? $("note-text") : $("note-who")).focus(); return; }
+    state.notes = (state.notes || []).concat({who, text, at:new Date().toISOString()});
+    $("note-text").value = "";
+    renderNotes(); save();
+  }
+});
+
+renderGates();
+renderNotes();
+
+(async () => {
+  db = await claude.use("db");
+  if (!db) { $("live").textContent = "共享状态没连上，下面的操作只在这台机器上"; return; }
+  $("live").textContent = "共享状态已连上——所有人看到的是同一份";
+  db.doc("board/state").onSnapshot(
+    (snap) => {
+      const data = snap.exists ? snap.data() : null;
+      if (!data) return;
+      state = {gates:data.gates || {}, notes:data.notes || []};
+      renderGates(); renderNotes();
+    },
+    (error) => { $("live").textContent = "共享状态断了（" + error.code + "），刷新页面重连"; }
+  );
+})();
+</script>
