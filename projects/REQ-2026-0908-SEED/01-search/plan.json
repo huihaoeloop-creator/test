@@ -345,7 +345,7 @@
       "key": "brand",
       "name": "品牌官网",
       "mode": "auto",
-      "quota": 51,
+      "quota": 36,
       "license": "内部参考",
       "note": "仅作内部对标。交付 PPT 必须保留 Sources 页并注明品牌，任何情况下不得当作原创款呈现给客户。"
     },
@@ -353,11 +353,19 @@
       "key": "pinterest",
       "name": "Pinterest",
       "mode": "auto-api",
-      "quota": 69,
+      "quota": 48,
       "license": "官方 API",
       "note": "只走官方 API，保留 pin 链接与作者署名；不抓网页、不绕登录。"
+    },
+    {
+      "key": "wgsn",
+      "name": "WGSN / Fashion Snoops",
+      "mode": "manual",
+      "quota": 36,
+      "license": "订阅制，ToS 禁止抓取",
+      "note": "佘吉只产出选片清单（栏目路径 + 关键词 + 目标张数），由持账号的同事手动导出后放进 02 的素材目录。"
     }
   ],
   "unmapped": [],
-  "approved": false
+  "approved": true
 }

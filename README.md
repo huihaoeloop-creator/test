@@ -134,12 +134,14 @@ advances a node on its own.
 |---|---|---|
 | 00 需求接单 | `scripts/intake.py` | 陈主管的一句话 → `intake.json` / `brief.json` |
 | 01 检索策略 | `scripts/search_plan.py` | `intake.json` → `plan.json` |
+| 02 素材采集 | `scripts/collect.py` | `plan.json` + 图 → `ledger.json` + 分方向素材目录 |
 | 07 出 PPT | `scripts/build_deck.py` | `brief.json` + `.potx` 模版 → 交付 PPT |
 | — 诊断 | `scripts/check_pptx.py`, `scripts/dump_template.py` | 查 PPT 结构 / 看模版排版 |
 
 ```bash
 python -X utf8 scripts/intake.py intake.json --to-brief brief.json
 python -X utf8 scripts/search_plan.py intake.json --target 40 -o plan.json
+python -X utf8 scripts/collect.py --plan plan.json --ingest 导出/ --channel wgsn --direction 1
 python -X utf8 scripts/build_deck.py brief.json -t 模版.potx -o 交付.pptx
 ```
 
