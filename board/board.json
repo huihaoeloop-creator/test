@@ -61,7 +61,7 @@
   "load": {
     "陈主管": {
       "total": 3,
-      "gate": 2,
+      "gate": 1,
       "overdue": 1,
       "req_ids": [
         "REQ-2026-0828-CHEN",
@@ -184,9 +184,9 @@
       "open_questions": [],
       "due": "2026-09-08",
       "days_left": 0,
-      "node": "01",
-      "status": "gate",
-      "why": "检索式与配额待确认（plan.json approved=false）",
+      "node": "02",
+      "status": "running",
+      "why": "采集中 0/120 张",
       "target": 120,
       "collected": 0,
       "internal_only": 0,

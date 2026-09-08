@@ -134,7 +134,7 @@ advances a node on its own.
 |---|---|---|
 | 00 需求接单 | `scripts/intake.py` | 陈主管的一句话 → `intake.json` / `brief.json` |
 | 01 检索策略 | `scripts/search_plan.py` | `intake.json` → `plan.json` |
-| 02 素材采集 | `scripts/collect.py` | `plan.json` + 图 → `ledger.json` + 分方向素材目录 |
+| 02 素材采集 | `scripts/collect.py`, `scripts/brand_collect.mjs` | `plan.json` + 图 → `ledger.json` + 分方向素材目录 |
 | — 看板数据 | `scripts/board_data.py` | `projects/` → `board.json` |
 | 07 出 PPT | `scripts/build_deck.py` | `brief.json` + `.potx` 模版 → 交付 PPT |
 | — 诊断 | `scripts/check_pptx.py`, `scripts/dump_template.py` | 查 PPT 结构 / 看模版排版 |

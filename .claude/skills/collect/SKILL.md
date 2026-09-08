@@ -33,6 +33,25 @@ python -X utf8 scripts/collect.py --plan plan.json --ingest 导出/ \
 按内容哈希（sha256）去重，跨渠道也认：同一张图从品牌官网和 Pinterest 各来一次，
 只留一份。
 
+### 品牌官网（自动）
+
+```
+node scripts/brand_collect.mjs <列表页URL> --probe          # 先看这个站什么结构
+node scripts/brand_collect.mjs <列表页URL> --card "a[href*='/products/']" \
+    --out 导出/seed --limit 36
+```
+
+`--probe` 把几条常见的商品卡片选择器各命中多少个报出来，**让人挑**，不是脚本
+猜一个然后静悄悄抓错东西。抓完自动写 `sources.csv`，逐张带商品链接。
+
+**先看 robots.txt，Disallow 就不抓，没有绕过开关。** 需要抓就先去拿书面许可。
+
+抓不到东西时看「跳过」那行——`卡片里没图` / `下载失败` / `小于 N 字节`
+三种原因分开报。图普遍偏小的站把 `--min-bytes` 调低。
+
+默认每张图之间停 1.5 秒（`--delay`）。别为了快调到 0，把人家站点打疼了
+是要担责任的。
+
 ### Pinterest 官方 API
 
 ```
