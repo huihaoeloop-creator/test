@@ -27,7 +27,7 @@ import re
 import sys
 from pathlib import Path
 
-VERSION = "2026-09-08a"
+VERSION = "2026-09-08b"
 
 # --------------------------------------------------------------------------
 # 渠道表 —— 合规边界写在这里，不在代码逻辑里
@@ -82,6 +82,9 @@ CHANNEL_BY_KEY = {c["key"]: c for c in CHANNELS}
 # 只收行业里有稳定英文对照的词。没把握的宁可不收，让它进「需补英文」，
 # 也不要放一个似是而非的翻译进去。
 LEXICON = {
+    # 限定 —— 复合词的前半段，丢了检索面会大一个数量级
+    "女装": "womenswear", "男装": "menswear", "童装": "kidswear",
+    "女士": "women", "男士": "men",
     # 品类
     "针织衫": "knitwear", "毛衣": "sweater", "开衫": "cardigan",
     "夹克": "jacket", "外套": "outerwear", "大衣": "coat",
@@ -149,8 +152,10 @@ def split_terms(value):
     for piece in re.split(r"[、,，/｜|+＋]|\s{2,}", str(value or "")):
         for token in TOKEN.findall(piece):
             token = token.strip()
-            if not token or token in STOP or len(token) == 1 and token.isdigit():
+            if not token or token in STOP:
                 continue
+            if len(token) == 1 and not '\u4e00' <= token <= '\u9fff':
+                continue          # 「T恤」切出来的那个孤立 T，不是检索词
             out.append(token)
     return out
 
@@ -161,10 +166,24 @@ def translate(term):
         return term.lower(), True          # 本来就是英文
     if term in LEXICON:
         return LEXICON[term], True
-    # 长词里可能含已知词：「落肩针织衫」→ knitwear
-    for cn, en in LEXICON.items():
-        if cn in term and len(cn) >= 2:
-            return en, True
+    # 复合词逐段拆：「女装毛衣」是 womenswear + sweater，两段都得留。
+    # 只取第一个命中的段会把限定词丢掉 —— 剩一个 sweater，检索面大一个数量级。
+    parts, i = [], 0
+    while i < len(term):
+        for size in range(min(4, len(term) - i), 1, -1):
+            chunk = term[i:i + size]
+            if chunk in LEXICON:
+                parts.append(LEXICON[chunk])
+                i += size
+                break
+        else:
+            i += 1
+    if parts:
+        deduped = []
+        for part in parts:
+            if part not in deduped:
+                deduped.append(part)
+        return " ".join(deduped), True
     return term, False
 
 
