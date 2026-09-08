@@ -26,23 +26,69 @@ import re
 import sys
 from pathlib import Path
 
-VERSION = "2026-09-08a"
+VERSION = "2026-09-08b"
 
+# 工具表。mode 决定佘吉能不能自己跑；license 是能不能进客户交付页。
+# 条款会变 —— 这里的说明是 2026-09 查的，签约或大批量跑之前自己再核一遍。
+# 加工具就往这里加一条，**加之前先确认商用授权**。
 TOOLS = {
-    "midjourney": {
-        "name": "Midjourney",
-        "mode": "manual",
-        "note": "没有官方 API。第三方中转、Discord self-bot 都违反 ToS，别碰。"
-                "佘吉出 prompt，人粘贴进 Discord。",
-        "file": "midjourney.txt",
-    },
     "ideogram": {
         "name": "Ideogram",
         "mode": "auto-api",
         "env": "IDEOGRAM_API_KEY",
-        "note": "有官方 API。key 放环境变量，不进仓库、不进聊天。",
+        "role": "主力出款图",
+        "license": "付费档含商用授权，生成物归你；免费档产出公开且商用受限",
+        "note": "官方 API，按张计费（V4 约 $0.03 Turbo / $0.06 默认 / $0.10 Quality）。"
+                "Character Reference 可以拉正反一致性。公司已有专业版月付。",
         "file": "ideogram.txt",
     },
+    "firefly": {
+        "name": "Adobe Firefly",
+        "mode": "auto-api",
+        "env": "FIREFLY_CLIENT_ID / FIREFLY_CLIENT_SECRET",
+        "role": "交付兜底",
+        "license": "训练数据是 Adobe Stock + 授权/公有领域内容；合格档位提供 IP 赔偿",
+        "note": "唯一给 IP 赔偿的一家。真正要进客户交付页的图用它最稳 —— "
+                "赔偿条款按档位和合同走，签之前让法务看一眼。",
+        "file": "firefly.txt",
+    },
+    "patterned": {
+        "name": "PatternedAI",
+        "mode": "manual",
+        "role": "面料花型",
+        "license": "生成的花型 royalty-free，可无限商用",
+        "note": "垂直做无缝循环，能把面料照片转成可循环花型，还能矢量化成 SVG "
+                "给圆网/丝网印。这一块没有替代品。API 官网早期写 coming soon，"
+                "当前状态未确认，先按人工用。",
+        "file": "patterned.txt",
+    },
+    "midjourney": {
+        "name": "Midjourney",
+        "mode": "manual",
+        "role": "概念探索",
+        "license": "付费订阅含商用",
+        "note": "没有官方 API。第三方中转、Discord self-bot 都违反 ToS，别碰。"
+                "佘吉出 prompt，人粘贴进 Discord。审美上限高，适合前期发散。",
+        "file": "midjourney.txt",
+    },
+    "jimeng": {
+        "name": "即梦 AI",
+        "mode": "manual",
+        "role": "中文提示词",
+        "license": "平台自带授权，可批量下载 PDF 授权书",
+        "note": "设计师直接用中文描述，省一道翻译。授权书能下载这点对交付很实用。"
+                "API 走火山方舟，接入成本另算，先按人工用。",
+        "file": "jimeng.txt",
+    },
+}
+
+# 明确不进工具表的，理由记在这里，免得下次又有人提
+NOT_USED = {
+    "leonardo-free": "Leonardo 免费档：平台保留对生成图的使用、复制、修改、分发权利，"
+                     "不能用于客户交付。要用就上付费档。",
+    "sd-self-host": "Stable Diffusion 自建：唯一能完全离线、数据不出公司的选项，"
+                    "但要 GPU 和运维，且各版本权重的商用条款不一样"
+                    "（SDXL 和 SD3 不同），上之前逐个核。",
 }
 
 # 色相分段。边界是约定俗成的那套，不是我编的，但也不是标准——
@@ -235,39 +281,39 @@ def render(blocks, tools, per_direction):
 
 
 def write_files(folder, blocks, tools, meta):
+    """每个工具一个文件，按 TOOLS 表驱动。
+
+    以前这里把 midjourney 和 ideogram 写死了，加了新工具却不出文件——
+    表里有、产出没有，是最容易被忽略的那种不一致。
+    """
     root = Path(folder)
     root.mkdir(parents=True, exist_ok=True)
 
     (root / "prompts.json").write_text(json.dumps(
         {"meta": dict(meta, node="04-prompts", version=VERSION),
          "tools": {k: TOOLS[k] for k in tools},
+         "not_used": NOT_USED,
          "directions": blocks}, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    if "midjourney" in tools:
-        lines = ["Midjourney —— 一行一条，粘进 Discord 就跑",
-                 "没有官方 API，别用第三方中转，违反 ToS。", ""]
+    written = []
+    for key in tools:
+        tool = TOOLS[key]
+        head = [f"{tool['name']} —— {tool['role']}", tool["note"], ""]
+        if tool.get("env"):
+            head.insert(2, f"key 放环境变量 {tool['env']}，不进文件、不进仓库。")
+
+        lines = list(head)
         for block in blocks:
             lines.append(f"### {block['direction']}")
             for style in block["styles"]:
                 for view, data in style["views"].items():
                     lines.append(f"# {style['style_no']} {view}")
-                    lines.append(data["midjourney"])
+                    # MJ 要带参数行，其余工具吃纯 prompt
+                    lines.append(data["midjourney"] if key == "midjourney" else data["prompt"])
             lines.append("")
-        (root / "midjourney.txt").write_text("\n".join(lines), encoding="utf-8")
-
-    if "ideogram" in tools:
-        lines = ["Ideogram —— 走官方 API，key 放 IDEOGRAM_API_KEY 环境变量",
-                 "别把 key 写进文件或提交进仓库。", ""]
-        for block in blocks:
-            lines.append(f"### {block['direction']}")
-            for style in block["styles"]:
-                for view, data in style["views"].items():
-                    lines.append(f"# {style['style_no']} {view}")
-                    lines.append(data["prompt"])
-            lines.append("")
-        (root / "ideogram.txt").write_text("\n".join(lines), encoding="utf-8")
-
-    return root
+        (root / tool["file"]).write_text("\n".join(lines), encoding="utf-8")
+        written.append(tool["file"])
+    return root, written
 
 
 def main():
@@ -301,11 +347,10 @@ def main():
     print(render(blocks, tools, args.per_direction))
 
     if args.output:
-        root = write_files(args.output, blocks, tools, style.get("meta", {}))
+        root, written = write_files(args.output, blocks, tools, style.get("meta", {}))
         print(f"\n已写出 {root}/")
-        for key in tools:
-            print(f"  {TOOLS[key]['file']}")
-        print("  prompts.json")
+        for name in written + ["prompts.json"]:
+            print(f"  {name}")
 
     if any(b["missing_judgement"] for b in blocks):
         sys.exit(1)

@@ -39,15 +39,21 @@ python -X utf8 scripts/prompts.py --style 03-style/style.json \
 
 ## 工具
 
-| 工具 | 能不能自动 |
-|---|---|
-| **Midjourney** | **不能。没有官方 API。** 第三方中转和 Discord self-bot 都违反 ToS，封号是真的。佘吉出 prompt，人粘贴进 Discord |
-| **Ideogram** | 有官方 API，走 `IDEOGRAM_API_KEY` 环境变量 |
+| 工具 | 角色 | 能不能自动 |
+|---|---|---|
+| **Ideogram** | 主力出款图 | 官方 API，`IDEOGRAM_API_KEY` |
+| **Adobe Firefly** | 交付兜底 | 官方 API。唯一给 IP 赔偿的一家 |
+| **PatternedAI** | 面料花型 | 人工。垂直做无缝循环，没有替代品 |
+| **Midjourney** | 概念发散 | **不能。没有官方 API。** 第三方中转和 Discord self-bot 都违反 ToS |
+| **即梦 AI** | 中文提示词 | 人工。API 走火山方舟，接入成本另算 |
+
+选型理由和其他工具为什么没进主力，见 `docs/生图工具选型.md`。
 
 **API key 只放环境变量。** 不写进文件、不提交进仓库、不发到聊天里。
 
 要加工具就往 `TOOLS` 表里加一条，注明 mode 和授权边界——**加之前先确认它的
-商用授权**，各家条款差很远，有的免费档生成的图不能商用。
+商用授权**。明确不用的记在 `NOT_USED` 里（比如 Leonardo 免费档保留对生成图的
+分发权利，不能用于客户交付），免得下次又有人提。
 
 ## MJ 参数为什么是那几个
 
