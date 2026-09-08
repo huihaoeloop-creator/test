@@ -174,6 +174,50 @@ td:first-child{font-weight:600; white-space:nowrap}
   .gate .g-act{grid-column:1; grid-row:auto}
 }
 </style>
+<style>
+/* ---------- 主管筛选 ---------- */
+.who-bar{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.who{font:inherit; font-size:13px; font-weight:600; padding:6px 14px; cursor:pointer;
+  background:var(--surface); color:var(--ink-2);
+  border:1px solid var(--line-strong); border-radius:2px}
+.who[aria-pressed="true"]{background:var(--accent); color:var(--ground); border-color:var(--accent)}
+.who small{font-weight:400; opacity:.75; margin-left:5px}
+
+/* ---------- 需求卡 ---------- */
+.reqs{display:grid; gap:10px; margin-top:16px}
+.rcard{display:grid; grid-template-columns:1fr auto; gap:6px 20px; text-align:left;
+  font:inherit; color:inherit; cursor:pointer; width:100%;
+  background:var(--surface); border:1px solid var(--line); border-radius:3px;
+  border-left:3px solid var(--line-strong); padding:14px 16px}
+.rcard[aria-pressed="true"]{border-left-color:var(--accent); box-shadow:var(--shadow)}
+.rcard .r-who{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+.rcard .r-name{font-size:16px; font-weight:600; margin-top:1px}
+.rcard .r-why{grid-column:1; font-size:13px; color:var(--ink-2)}
+.rcard .r-side{grid-column:2; grid-row:1/4; text-align:right; display:grid; gap:7px;
+  justify-items:end; align-content:start}
+.rail{display:flex; gap:3px}
+.rail i{width:12px; height:5px; border-radius:1px; background:var(--sunk);
+  border:1px solid var(--line)}
+.rail i.past{background:var(--line-strong); border-color:var(--line-strong)}
+.rail i.now{background:var(--accent); border-color:var(--accent)}
+.rail i.now.gate{background:var(--wait); border-color:var(--wait)}
+.rail i.now.blocked{background:var(--block); border-color:var(--block)}
+.r-node{font-size:11px; color:var(--muted)}
+.tag-eg{font-size:10px; font-weight:600; letter-spacing:.08em; padding:1px 6px;
+  border-radius:2px; background:var(--sunk); color:var(--muted); margin-left:8px;
+  vertical-align:2px}
+
+.detail{margin-top:16px; background:var(--surface); border:1px solid var(--line);
+  border-radius:3px; padding:20px 22px}
+.detail h3{font-size:17px; font-weight:600}
+.d-sub{font-size:12px; color:var(--muted); margin-top:2px}
+.d-block{margin-top:20px}
+.d-block > h4{font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; margin:0 0 10px}
+.warn{margin-top:8px; font-size:12px; color:var(--block); font-weight:500}
+.qs{margin:0; padding-left:20px; display:grid; gap:6px; font-size:13px; color:var(--ink-2)}
+.empty{color:var(--muted); font-size:13px}
+</style>
 
 <div class="wrap">
 
@@ -181,286 +225,557 @@ td:first-child{font-weight:600; white-space:nowrap}
   <div>
     <div class="eyebrow">设计 AGENT · 工作流</div>
     <h1>佘吉工作台</h1>
-    <p>九个节点，每一步都要人点头才往下走。这块板子对设计主管、经理、总经理开放。</p>
+    <p>佘吉同时接多位主管的单。每张单各走各的九个节点，每一步都要人点头才往下走。</p>
   </div>
   <div class="stamp">
     <b>快照 2026-09-08</b>
-    管道 4/9 已建成<br>
-    在办需求 1 件
+    <span id="hd-count"></span><br>
+    管道 4/9 已建成
   </div>
 </header>
 
 <section>
+  <div class="sec-head"><h2>按主管看</h2><span>这是筛选，不是隔离——每个人都能看到全部</span></div>
+  <div class="who-bar" id="who-bar"></div>
+  <div class="reqs" id="reqs"></div>
+</section>
+
+<section id="detail-sec">
+  <div class="sec-head"><h2>需求详情</h2><span id="detail-id"></span></div>
+  <div class="detail" id="detail"></div>
+</section>
+
+<section>
   <div class="sec-head"><h2>流程管道</h2><span>编号即依赖顺序——上一节点的产出是下一节点的输入</span></div>
-  <div class="pipe">
-
-    <div class="node built" data-n="00">
-      <h3>需求接单<span class="chip done">已建成</span></h3>
-      <div class="io"><b>入</b> 陈主管一句话　<b>出</b> intake.json → brief.json</div>
-      <div class="file mono">intake.py</div>
-    </div>
-
-    <div class="node built" data-n="01">
-      <h3>检索策略<span class="chip done">已建成</span></h3>
-      <div class="io"><b>入</b> intake.json　<b>出</b> plan.json（中英词表、方向、配额、合规边界）</div>
-      <div class="file mono">search_plan.py</div>
-    </div>
-
-    <div class="node built" data-n="02">
-      <h3>素材采集<span class="chip done">已建成</span></h3>
-      <div class="io"><b>入</b> plan.json + 图　<b>出</b> ledger.json 出处台账 + 分方向素材目录</div>
-      <div class="file mono">collect.py</div>
-    </div>
-
-    <div class="node todo" data-n="03">
-      <h3>风格解构<span class="chip off">未建</span></h3>
-      <div class="io"><b>入</b> ledger.json　<b>出</b> 五个方向的风格要素表（廓形／领型／克重／配色）</div>
-      <div class="file mono">—</div>
-    </div>
-
-    <div class="node todo" data-n="04">
-      <h3>出图指令<span class="chip off">未建</span></h3>
-      <div class="io"><b>入</b> 风格要素表　<b>出</b> 各生图工具的 prompt 组</div>
-      <div class="file mono">—</div>
-    </div>
-
-    <div class="node todo" data-n="05">
-      <h3>批量生成<span class="chip off">未建</span></h3>
-      <div class="io"><b>入</b> prompt 组　<b>出</b> 生成图（这些才是可交付的图）</div>
-      <div class="file mono">—</div>
-    </div>
-
-    <div class="node todo" data-n="06">
-      <h3>后期处理<span class="chip off">未建</span></h3>
-      <div class="io"><b>入</b> 生成图　<b>出</b> 去背白底图，按 <span class="mono">款号_f / 款号_b</span> 命名</div>
-      <div class="file mono">—</div>
-    </div>
-
-    <div class="node built" data-n="07">
-      <h3>出 PPT<span class="chip done">已建成</span></h3>
-      <div class="io"><b>入</b> brief.json + 陈主管的 .potx 模版　<b>出</b> 可交付 PPT（首末页原样，字体字号取自模版第二页）</div>
-      <div class="file mono">build_deck.py</div>
-    </div>
-
-    <div class="node todo" data-n="08">
-      <h3>复盘沉淀<span class="chip off">未建</span></h3>
-      <div class="io"><b>入</b> 客户采纳结果　<b>出</b> 回写历史库，供下次接单时命中相似案例</div>
-      <div class="file mono">—</div>
-    </div>
-
-  </div>
-</section>
-
-<section>
-  <div class="sec-head"><h2>在办需求</h2><span>REQ-2026-0908-SEED</span></div>
-  <div class="req">
-    <div class="req-top">
-      <h3>Seed 女装 秋冬趋势与款式推荐</h3>
-      <span class="id mono">REQ-2026-0908-SEED · 陈主管 · 2026-09-08</span>
-    </div>
-    <p class="quote">「Seed 女装做一个秋冬的趋势和款式推荐」</p>
-    <div class="fields">
-      <div><div class="f-k">客户</div><div class="f-v">Seed（澳洲女装品牌）</div></div>
-      <div><div class="f-k">品类</div><div class="f-v">女装毛衣 · womenswear sweater</div></div>
-      <div><div class="f-k">季节</div><div class="f-v">2027 秋冬 · AW27（南半球）</div></div>
-      <div><div class="f-k">交付日</div><div class="f-v">2026-09-08</div></div>
-      <div><div class="f-k">数量</div><div class="f-v">5 个方向 × 4 款 = 20 款</div></div>
-      <div><div class="f-k">采集目标</div><div class="f-v">120 张（20 款 × 前后图 ÷ 选片比 3:1）</div></div>
-      <div><div class="f-k">廓形 / 色彩 / 面料</div><div class="f-v open">不设限，由佘吉在方向里提</div></div>
-      <div><div class="f-k">客群 / 价格带</div><div class="f-v open">不设限</div></div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="sec-head"><h2>五个趋势方向</h2><span>方向是佘吉的提案，等 WGSN 导出后回头校准</span></div>
-  <div class="dirs">
-    <div class="dir">
-      <div class="d-name">Elevated Everyday　精致基础</div>
-      <div class="d-terms mono">merino · fine gauge · tonal · crew neck</div>
-      <div class="meter"><i style="width:0%"></i></div>
-      <div class="d-num"><b>0</b>/24</div>
-    </div>
-    <div class="dir">
-      <div class="d-name">Oversized Comfort　宽松舒适</div>
-      <div class="d-terms mono">oversized · drop shoulder · chunky gauge · cocoon</div>
-      <div class="meter"><i style="width:0%"></i></div>
-      <div class="d-num"><b>0</b>/24</div>
-    </div>
-    <div class="dir">
-      <div class="d-name">Textural Craft　肌理手作</div>
-      <div class="d-terms mono">cable knit · pointelle · bobble · brushed mohair</div>
-      <div class="meter"><i style="width:0%"></i></div>
-      <div class="d-num"><b>0</b>/24</div>
-    </div>
-    <div class="dir">
-      <div class="d-name">Sporty Layer　运动叠穿</div>
-      <div class="d-terms mono">half zip · funnel neck · colour blocking · raglan</div>
-      <div class="meter"><i style="width:0%"></i></div>
-      <div class="d-num"><b>0</b>/24</div>
-    </div>
-    <div class="dir">
-      <div class="d-name">Statement Colour　色彩表达</div>
-      <div class="d-terms mono">intarsia · stripe · argyle · saturated</div>
-      <div class="meter"><i style="width:0%"></i></div>
-      <div class="d-num"><b>0</b>/24</div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="sec-head"><h2>人工审核闸</h2><span id="live">正在连接共享状态…</span></div>
-  <div class="gates" id="gates"></div>
-  <p style="font-size:12px;color:var(--muted);margin-top:10px">
-    署名是自己填的，页面认不到人头——这不是认证过的签字，只是让大家知道谁点的。
-    需要可审计的留痕，走 git commit 那条路。
-  </p>
+  <div class="pipe" id="pipe"></div>
 </section>
 
 <section>
   <div class="sec-head"><h2>渠道与合规</h2><span>边界写在 plan.json 里，不在跑的时候临场判断</span></div>
   <div class="scroll"><table>
-    <thead><tr><th>渠道</th><th>佘吉能做什么</th><th>约束</th><th class="num">配额</th></tr></thead>
+    <thead><tr><th>渠道</th><th>佘吉能做什么</th><th>约束</th></tr></thead>
     <tbody>
-      <tr>
-        <td>品牌官网</td>
-        <td>可自动采集</td>
-        <td>仅内部对标。Sources 页必须注明品牌，<b>绝不能当原创款给客户</b></td>
-        <td class="num">36</td>
-      </tr>
-      <tr>
-        <td>Pinterest</td>
-        <td>只走官方 API</td>
-        <td>官方 API 无全站搜索——人先在画板选片，脚本再拉画板。保留 pin 链接与作者</td>
-        <td class="num">48</td>
-      </tr>
-      <tr>
-        <td>WGSN / Fashion Snoops</td>
-        <td>只出选片清单</td>
-        <td>订阅制且 ToS 禁止抓取。<b>不接受账号密码</b>，由持证同事手动导出</td>
-        <td class="num">36</td>
-      </tr>
-      <tr>
-        <td>Instagram</td>
-        <td>不采集</td>
-        <td>ToS 禁止抓取。人工刷到的只记链接，不入素材库</td>
-        <td class="num">0</td>
-      </tr>
+      <tr><td>品牌官网</td><td>可自动采集</td>
+        <td>仅内部对标。Sources 页必须注明品牌，<b>绝不能当原创款给客户</b></td></tr>
+      <tr><td>Pinterest</td><td>只走官方 API</td>
+        <td>官方 API 无全站搜索——人先在画板选片，脚本再拉画板。保留 pin 链接与作者</td></tr>
+      <tr><td>WGSN / Fashion Snoops</td><td>只出选片清单</td>
+        <td>订阅制且 ToS 禁止抓取。<b>不接受账号密码</b>，由持证同事手动导出</td></tr>
+      <tr><td>Instagram</td><td>不采集</td>
+        <td>ToS 禁止抓取。人工刷到的只记链接，不入素材库</td></tr>
     </tbody>
   </table></div>
-</section>
-
-<section>
-  <div class="sec-head"><h2>留言</h2><span>所有人可见，随页面一起保存</span></div>
-  <ul class="notes" id="notes"></ul>
-  <div class="note-row">
-    <input type="text" id="note-who" placeholder="你的名字" maxlength="12">
-    <input type="text" id="note-text" placeholder="写点什么…" maxlength="160">
-    <button id="note-add">留言</button>
-  </div>
 </section>
 
 <section>
   <div class="sync">
     <h3>这块板子怎么更新</h3>
     <ol>
-      <li><b>后面建好的节点会同步进来。</b>每建完一个节点，我把这一页重新发布到<b>同一个链接</b>——你们的书签不用换，刷新就是新的。03 到 06 建好后会从虚线框变成实线。</li>
-      <li><b>闸的确认和留言存在页面自己的共享库里。</b>多人同时开着都能看到彼此的操作，重新发布也不会丢。</li>
-      <li><b>采集进度不会自己动。</b>这页读不到你们电脑上的 <span class="mono">ledger.json</span>——数字是我发布时的快照。跑完采集告诉我，我刷新这一页。</li>
+      <li><b>需求和进度是快照。</b>数字来自 <span class="mono">board_data.py</span> 扫 <span class="mono">projects/</span> 的结果——它按<b>产物在不在</b>判断走到哪个节点，不看谁填了什么状态。这页读不到你们机器上的文件，跑完告诉我，我重新发布。</li>
+      <li><b>建好的节点会自己进来。</b>每建完一个节点，我重新发布到<b>同一个链接</b>，虚线框变实线，书签不用换。</li>
+      <li><b>点头和留言存在页面自己的共享库里</b>，按需求单分开存。多人同时开着都看得到，重新发布也不丢。</li>
+      <li><b>要加一位主管</b>，就是多一张需求单：<span class="mono">intake.py --new</span> 后把 requester 填成他的名字，放进 <span class="mono">projects/</span>，下次扫描自动出现。</li>
     </ol>
   </div>
 </section>
 
 <div class="foot">
-  <span>佘吉 · 设计工作流　管道 4/9 已建成</span>
+  <span>佘吉 · 设计工作流　<span id="ft-count"></span></span>
   <span class="mono">huihaoeloop-creator/test · claude/claude-chrome-integration-xxq3c0</span>
 </div>
 
 </div>
 
 <script>
-const GATES = [
-  {id:"g1", name:"需求确认单签字", why:"节点 00 → 01。字段齐全、无待确认项，等陈主管签字", state:"wait"},
-  {id:"g2", name:"检索方案确认", why:"节点 01 → 02。检索式与配额要点头，plan.json 的 approved 才置 true", state:"block"},
-  {id:"g3", name:"采集选片确认", why:"节点 02 → 03。120 张收齐后过一遍，剔掉跑偏的", state:"off"},
-  {id:"g4", name:"出图指令确认", why:"节点 04 → 05。prompt 组批量跑之前必须看，跑错一轮成本最高", state:"off"},
-  {id:"g5", name:"交付前终审", why:"节点 07 之后。Sources 页在不在、有没有内部参考图混进交付页", state:"off"},
-];
-const LABEL = {wait:"待签", block:"卡在这里", off:"未到"};
+const DATA = {
+  "generated_by": "board_data.py 2026-09-08a",
+  "nodes": [
+    {
+      "n": "00",
+      "name": "需求接单",
+      "script": "intake.py"
+    },
+    {
+      "n": "01",
+      "name": "检索策略",
+      "script": "search_plan.py"
+    },
+    {
+      "n": "02",
+      "name": "素材采集",
+      "script": "collect.py"
+    },
+    {
+      "n": "03",
+      "name": "风格解构",
+      "script": null
+    },
+    {
+      "n": "04",
+      "name": "出图指令",
+      "script": null
+    },
+    {
+      "n": "05",
+      "name": "批量生成",
+      "script": null
+    },
+    {
+      "n": "06",
+      "name": "后期处理",
+      "script": null
+    },
+    {
+      "n": "07",
+      "name": "出 PPT",
+      "script": "build_deck.py"
+    },
+    {
+      "n": "08",
+      "name": "复盘沉淀",
+      "script": null
+    }
+  ],
+  "built": [
+    "00",
+    "01",
+    "02",
+    "07"
+  ],
+  "requesters": [
+    "李主管",
+    "王主管",
+    "陈主管"
+  ],
+  "requests": [
+    {
+      "req_id": "REQ-2026-0902-WANG",
+      "project": "AW27 男装夹克（示例）",
+      "client": "N 客户",
+      "requester": "王主管",
+      "date": "2026-09-02",
+      "example": true,
+      "raw_request": "N 客户要一版男装夹克，机能风，秋冬。",
+      "fields": {
+        "品类": "男装夹克",
+        "季节": "2027 秋冬",
+        "交付日": "2026-09-20",
+        "廓形": "宽松 / 落肩",
+        "色彩倾向": "中性色",
+        "面料": "尼龙 / 涤纶",
+        "目标客群": "25-35 岁",
+        "价格带": "¥599-899",
+        "数量": "2 个方向 × 3 款"
+      },
+      "open_questions": [],
+      "node": "02",
+      "status": "running",
+      "why": "采集中 23/60 张",
+      "target": 60,
+      "collected": 23,
+      "internal_only": 23,
+      "directions": [
+        {
+          "name": "Utility Shell　机能外壳",
+          "terms": [
+            "nylon",
+            "funnel neck",
+            "colour blocking"
+          ],
+          "quota": 30,
+          "got": 12
+        },
+        {
+          "name": "Soft Tailoring　软性剪裁",
+          "terms": [
+            "relaxed fit",
+            "drop shoulder",
+            "neutral palette"
+          ],
+          "quota": 30,
+          "got": 11
+        }
+      ],
+      "directions_status": "",
+      "channels": [
+        {
+          "name": "品牌官网",
+          "mode": "auto",
+          "quota": 18,
+          "license": "内部参考"
+        },
+        {
+          "name": "Pinterest",
+          "mode": "auto-api",
+          "quota": 24,
+          "license": "官方 API"
+        },
+        {
+          "name": "WGSN / Fashion Snoops",
+          "mode": "manual",
+          "quota": 18,
+          "license": "订阅制，ToS 禁止抓取"
+        }
+      ]
+    },
+    {
+      "req_id": "REQ-2026-0905-LI",
+      "project": "SS27 连衣裙企划（示例）",
+      "client": "M 客户",
+      "requester": "李主管",
+      "date": "2026-09-05",
+      "example": true,
+      "raw_request": "M 客户春夏连衣裙，要度假感，月底前给三个方向。",
+      "fields": {
+        "品类": "女装连衣裙",
+        "季节": "2027 春夏",
+        "交付日": "2026-09-30",
+        "廓形": "A 摆 / 收腰",
+        "目标客群": "25-35 岁",
+        "数量": "3 个方向"
+      },
+      "open_questions": [
+        "「度假感」是 A 海岛树脂色 + 轻薄雪纺　B 地中海条纹 + 棉麻　—— 面料和色彩两条路差很远"
+      ],
+      "node": "00",
+      "status": "gate",
+      "why": "1 项待李主管确认",
+      "target": 0,
+      "collected": 0,
+      "internal_only": 0,
+      "directions": [],
+      "directions_status": "",
+      "channels": []
+    },
+    {
+      "req_id": "REQ-2026-0908-SEED",
+      "project": "Seed 女装 秋冬趋势与款式推荐",
+      "client": "Seed（澳洲女装品牌）",
+      "requester": "陈主管",
+      "date": "2026-09-08",
+      "example": false,
+      "raw_request": "Seed 女装做一个秋冬的趋势和款式推荐",
+      "fields": {
+        "品类": "女装毛衣",
+        "季节": "2027 秋冬",
+        "交付日": "2026-09-08",
+        "廓形": "不设限 —— 陈主管明确不给范围，由佘吉在趋势方向里提",
+        "色彩倾向": "不设限 —— 陈主管明确不给范围，由佘吉在趋势方向里提",
+        "面料": "不设限 —— 陈主管明确不给范围，由佘吉在趋势方向里提",
+        "目标客群": "不设限 —— 陈主管明确不给范围，由佘吉在趋势方向里提",
+        "价格带": "不设限 —— 陈主管明确不给范围，由佘吉在趋势方向里提",
+        "数量": "趋势 5 个方向 × 每方向 4 款 = 20 款",
+        "目标品牌": "Seed",
+        "备注": "交付物含两部分：趋势 + 款式推荐。已确认 Seed 指澳洲女装品牌 Seed，本单按「做给 Seed」处理。WGSN 走人工导出（陈主管提出给账号密码，未采纳，见 01 检索策略）。"
+      },
+      "open_questions": [],
+      "node": "01",
+      "status": "gate",
+      "why": "检索式与配额待确认（plan.json approved=false）",
+      "target": 120,
+      "collected": 0,
+      "internal_only": 0,
+      "directions": [
+        {
+          "name": "Elevated Everyday　精致基础",
+          "terms": [
+            "merino",
+            "fine gauge",
+            "tonal",
+            "crew neck"
+          ],
+          "quota": 24,
+          "got": 0
+        },
+        {
+          "name": "Oversized Comfort　宽松舒适",
+          "terms": [
+            "oversized",
+            "drop shoulder",
+            "chunky gauge",
+            "cocoon shape"
+          ],
+          "quota": 24,
+          "got": 0
+        },
+        {
+          "name": "Textural Craft　肌理手作",
+          "terms": [
+            "cable knit",
+            "pointelle",
+            "bobble",
+            "brushed mohair"
+          ],
+          "quota": 24,
+          "got": 0
+        },
+        {
+          "name": "Sporty Layer　运动叠穿",
+          "terms": [
+            "half zip",
+            "funnel neck",
+            "colour blocking",
+            "raglan sleeve"
+          ],
+          "quota": 24,
+          "got": 0
+        },
+        {
+          "name": "Statement Colour　色彩表达",
+          "terms": [
+            "intarsia",
+            "stripe",
+            "argyle",
+            "saturated"
+          ],
+          "quota": 24,
+          "got": 0
+        }
+      ],
+      "directions_status": "佘吉提案，未经陈主管确认；WGSN 导出后需回头校准",
+      "channels": [
+        {
+          "name": "品牌官网",
+          "mode": "auto",
+          "quota": 36,
+          "license": "内部参考"
+        },
+        {
+          "name": "Pinterest",
+          "mode": "auto-api",
+          "quota": 48,
+          "license": "官方 API"
+        },
+        {
+          "name": "WGSN / Fashion Snoops",
+          "mode": "manual",
+          "quota": 36,
+          "license": "订阅制，ToS 禁止抓取"
+        }
+      ]
+    }
+  ]
+};
 
-let db = null, state = {gates:{}, notes:[]};
+const GATES = [
+  {id:"g1", node:"00", name:"需求确认单签字", why:"字段齐全、待确认项清空，主管签字后进节点 01"},
+  {id:"g2", node:"01", name:"检索方案确认",   why:"检索式与配额点头后，plan.json 的 approved 才置 true"},
+  {id:"g3", node:"02", name:"采集选片确认",   why:"图收齐后过一遍，剔掉跑偏的再进节点 03"},
+  {id:"g4", node:"04", name:"出图指令确认",   why:"prompt 组批量跑之前必须看，跑错一轮成本最高"},
+  {id:"g5", node:"07", name:"交付前终审",     why:"Sources 页在不在、有没有内部参考图混进交付页"},
+];
+
+let db = null, shared = {}, who = "全部", picked = DATA.requests[0] ? DATA.requests[0].req_id : null;
+
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const stamp = (iso) => { try { return new Date(iso).toLocaleString("zh-CN",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}); } catch { return ""; } };
+const find = (id) => DATA.requests.find(r => r.req_id === id);
+const visible = () => who === "全部" ? DATA.requests : DATA.requests.filter(r => r.requester === who);
 
-function renderGates(){
-  $("gates").innerHTML = GATES.map(g => {
-    const sig = state.gates[g.id];
-    const chip = sig ? '<span class="chip done">已确认</span>'
-                     : `<span class="chip ${g.state}">${LABEL[g.state]}</span>`;
-    const act = sig
-      ? `<button class="ghost" data-undo="${g.id}">撤回</button>`
-      : `<input type="text" data-who="${g.id}" placeholder="你的名字" maxlength="12">
-         <button data-sign="${g.id}">确认</button>`;
-    const line = sig
-      ? `<div class="g-sig">${esc(sig.who)} 于 ${stamp(sig.at)} 确认</div>` : "";
-    return `<div class="gate ${sig ? "signed" : ""}">
-      <div class="g-name">${g.name}${chip}</div>
-      <div class="g-why">${g.why}</div>
-      <div class="g-act">${act}</div>${line}</div>`;
+/* ---------- 顶部与筛选 ---------- */
+function renderCounts(){
+  const text = `${DATA.requests.length} 张单 · ${DATA.requesters.length} 位主管`;
+  $("hd-count").textContent = text;
+  $("ft-count").textContent = text + "　管道 4/9 已建成";
+}
+
+function renderWho(){
+  const options = ["全部"].concat(DATA.requesters);
+  $("who-bar").innerHTML = options.map(name => {
+    const n = name === "全部" ? DATA.requests.length
+                              : DATA.requests.filter(r => r.requester === name).length;
+    return `<button class="who" data-who="${esc(name)}" aria-pressed="${name === who}">
+      ${esc(name)}<small>${n}</small></button>`;
   }).join("");
 }
 
-function renderNotes(){
-  const list = state.notes || [];
-  $("notes").innerHTML = list.length
-    ? list.slice(-30).map(n =>
-        `<li><span class="who">${esc(n.who)}</span><span class="when">${stamp(n.at)}</span><br>${esc(n.text)}</li>`).join("")
-    : `<li style="color:var(--muted)">还没有留言。</li>`;
+/* ---------- 需求列表 ---------- */
+function rail(request){
+  return `<div class="rail">` + DATA.nodes.map(node => {
+    if (node.n < request.node) return `<i class="past"></i>`;
+    if (node.n === request.node) return `<i class="now ${request.status === "gate" ? "gate" : request.status === "blocked" ? "blocked" : ""}"></i>`;
+    return `<i></i>`;
+  }).join("") + `</div>`;
 }
 
+function renderReqs(){
+  const rows = visible();
+  $("reqs").innerHTML = rows.length ? rows.map(request => {
+    const node = DATA.nodes.find(n => n.n === request.node);
+    const chip = request.status === "gate" ? '<span class="chip wait">等点头</span>'
+               : request.status === "blocked" ? '<span class="chip block">卡住</span>'
+               : '<span class="chip done">在跑</span>';
+    return `<button class="rcard" data-req="${esc(request.req_id)}" aria-pressed="${request.req_id === picked}">
+      <div class="r-who">${esc(request.requester)} · ${esc(request.client)}</div>
+      <div class="r-name">${esc(request.project)}${request.example ? '<span class="tag-eg">示例</span>' : ""}</div>
+      <div class="r-why">${esc(request.why)}</div>
+      <div class="r-side">${chip}${rail(request)}
+        <div class="r-node">节点 ${esc(request.node)} ${esc(node ? node.name : "")}</div></div>
+    </button>`;
+  }).join("") : `<p class="empty">这位主管名下没有在办的单。</p>`;
+}
+
+/* ---------- 详情 ---------- */
+function gateRows(request){
+  const mine = shared[request.req_id] || {gates:{}, notes:[]};
+  return GATES.map(gate => {
+    const sig = (mine.gates || {})[gate.id];
+    let derived = "", warn = "";
+    if (gate.node === "00" && request.open_questions.length)
+      derived = `<span class="chip wait">${request.open_questions.length} 项待确认</span>`;
+    if (gate.node === "01"){
+      const approved = request.node > "01" || (request.node === "01" && request.status !== "gate");
+      derived = approved ? '<span class="chip done">approved=true</span>'
+                         : '<span class="chip block">approved=false</span>';
+      if (sig && !approved)
+        warn = `<div class="warn">已点头，但 plan.json 里还是 false —— 记得改，否则节点 02 跑不起来</div>`;
+    }
+    if (!derived && gate.node > request.node) derived = '<span class="chip off">未到</span>';
+
+    const act = sig
+      ? `<button class="ghost" data-undo="${gate.id}">撤回</button>`
+      : `<input type="text" data-who="${gate.id}" placeholder="你的名字" maxlength="12">
+         <button data-sign="${gate.id}">确认</button>`;
+    const line = sig ? `<div class="g-sig">${esc(sig.who)} 于 ${stamp(sig.at)} 确认</div>` : "";
+    return `<div class="gate ${sig ? "signed" : ""}">
+      <div class="g-name">${gate.name}${derived}</div>
+      <div class="g-why">节点 ${gate.node} · ${gate.why}</div>
+      <div class="g-act">${act}</div>${line}${warn}</div>`;
+  }).join("");
+}
+
+function renderDetail(){
+  const request = find(picked);
+  if (!request){ $("detail").innerHTML = `<p class="empty">左边选一张单。</p>`; $("detail-id").textContent = ""; return; }
+  $("detail-id").textContent = request.req_id;
+  const mine = shared[request.req_id] || {gates:{}, notes:[]};
+
+  const fields = Object.entries(request.fields).map(([k, v]) =>
+    `<div><div class="f-k">${esc(k)}</div><div class="f-v">${esc(v)}</div></div>`).join("");
+
+  const dirs = request.directions.length ? `<div class="dirs">` + request.directions.map(d => {
+    const pct = d.quota ? Math.min(100, Math.round(100 * d.got / d.quota)) : 0;
+    return `<div class="dir">
+      <div class="d-name">${esc(d.name)}</div>
+      <div class="d-terms mono">${esc(d.terms.join(" · "))}</div>
+      <div class="meter"><i style="width:${pct}%"></i></div>
+      <div class="d-num"><b>${d.got}</b>/${d.quota}</div></div>`;
+  }).join("") + `</div>` : `<p class="empty">检索方案还没出，没有方向。</p>`;
+
+  const questions = request.open_questions.length
+    ? `<div class="d-block"><h4>待确认 ${request.open_questions.length} 项</h4>
+       <ol class="qs">${request.open_questions.map(q => `<li>${esc(q)}</li>`).join("")}</ol></div>` : "";
+
+  const notes = (mine.notes || []).length
+    ? (mine.notes).slice(-20).map(n =>
+        `<li><span class="who">${esc(n.who)}</span><span class="when">${stamp(n.at)}</span><br>${esc(n.text)}</li>`).join("")
+    : `<li class="empty">这张单还没有留言。</li>`;
+
+  $("detail").innerHTML = `
+    <div class="req-top">
+      <h3>${esc(request.project)}</h3>
+      <span class="id mono">${esc(request.req_id)} · ${esc(request.requester)} · ${esc(request.date)}</span>
+    </div>
+    <p class="quote">${esc(request.raw_request)}</p>
+    <div class="fields">${fields}</div>
+    ${questions}
+    <div class="d-block"><h4>趋势方向　采集 ${request.collected}/${request.target} 张${request.internal_only ? `　其中 ${request.internal_only} 张仅限内部` : ""}</h4>${dirs}
+      ${request.directions_status ? `<p class="d-sub">${esc(request.directions_status)}</p>` : ""}</div>
+    <div class="d-block"><h4>人工审核闸</h4><div class="gates">${gateRows(request)}</div>
+      <p class="d-sub" style="margin-top:10px">署名是自己填的，页面认不到人头——这不是认证过的签字。要可审计的留痕，走 git commit。</p></div>
+    <div class="d-block"><h4>留言</h4>
+      <ul class="notes">${notes}</ul>
+      <div class="note-row">
+        <input type="text" id="note-who" placeholder="你的名字" maxlength="12">
+        <input type="text" id="note-text" placeholder="写点什么…" maxlength="160">
+        <button id="note-add">留言</button>
+      </div></div>`;
+}
+
+/* ---------- 管道 ---------- */
+function renderPipe(){
+  const IO = {
+    "00":["陈主管一句话","intake.json → brief.json"],
+    "01":["intake.json","plan.json（中英词表、方向、配额、合规边界）"],
+    "02":["plan.json + 图","ledger.json 出处台账 + 分方向素材目录"],
+    "03":["ledger.json","五个方向的风格要素表（廓形／领型／克重／配色）"],
+    "04":["风格要素表","各生图工具的 prompt 组"],
+    "05":["prompt 组","生成图（这些才是可交付的图）"],
+    "06":["生成图","去背白底图，按 款号_f / 款号_b 命名"],
+    "07":["brief.json + .potx 模版","可交付 PPT（首末页原样，字体字号取自模版第二页）"],
+    "08":["客户采纳结果","回写历史库，下次接单命中相似案例"],
+  };
+  const here = {};
+  DATA.requests.forEach(r => { here[r.node] = (here[r.node] || 0) + 1; });
+
+  $("pipe").innerHTML = DATA.nodes.map(node => {
+    const built = !!node.script;
+    const io = IO[node.n] || ["",""];
+    const load = here[node.n] ? `<span class="chip wait">${here[node.n]} 张单在这里</span>` : "";
+    return `<div class="node ${built ? "built" : "todo"}" data-n="${node.n}">
+      <h3>${node.name}<span class="chip ${built ? "done" : "off"}">${built ? "已建成" : "未建"}</span>${load}</h3>
+      <div class="io"><b>入</b> ${esc(io[0])}　<b>出</b> ${esc(io[1])}</div>
+      <div class="file mono">${node.script || "—"}</div></div>`;
+  }).join("");
+}
+
+/* ---------- 共享状态 ---------- */
 async function save(){
   if (!db) return;
-  try { await db.doc("board/state").set(state); }
-  catch (e) { $("live").textContent = e.code === "invalid_argument" ? "你只有查看权限，改不了" : "保存失败，稍后再试"; }
+  try { await db.doc("board/state").set({requests: shared}); }
+  catch (e) {
+    const bar = document.querySelector("#detail .d-sub");
+    if (bar) bar.textContent = e.code === "invalid_argument"
+      ? "你只有查看权限，改不了。" : "保存失败，稍后再试。";
+  }
 }
 
 document.addEventListener("click", (event) => {
+  const pick = event.target.closest("[data-who]");
+  if (pick && pick.classList.contains("who")){
+    who = pick.dataset.who;
+    const rows = visible();
+    if (!rows.some(r => r.req_id === picked)) picked = rows[0] ? rows[0].req_id : null;
+    renderWho(); renderReqs(); renderDetail(); return;
+  }
+  const card = event.target.closest("[data-req]");
+  if (card){ picked = card.dataset.req; renderReqs(); renderDetail(); return; }
+
+  const mine = shared[picked] || (shared[picked] = {gates:{}, notes:[]});
   const sign = event.target.closest("[data-sign]");
-  if (sign) {
+  if (sign){
     const id = sign.dataset.sign;
-    const who = (document.querySelector(`[data-who="${id}"]`).value || "").trim();
-    if (!who) { document.querySelector(`[data-who="${id}"]`).focus(); return; }
-    state.gates[id] = {who, at:new Date().toISOString()};
-    renderGates(); save(); return;
+    const box = document.querySelector(`input[data-who="${id}"]`);
+    const name = (box.value || "").trim();
+    if (!name){ box.focus(); return; }
+    mine.gates[id] = {who:name, at:new Date().toISOString()};
+    renderDetail(); save(); return;
   }
   const undo = event.target.closest("[data-undo]");
-  if (undo) { delete state.gates[undo.dataset.undo]; renderGates(); save(); return; }
-  if (event.target.id === "note-add") {
-    const who = ($("note-who").value || "").trim();
+  if (undo){ delete mine.gates[undo.dataset.undo]; renderDetail(); save(); return; }
+  if (event.target.id === "note-add"){
+    const name = ($("note-who").value || "").trim();
     const text = ($("note-text").value || "").trim();
-    if (!who || !text) { (who ? $("note-text") : $("note-who")).focus(); return; }
-    state.notes = (state.notes || []).concat({who, text, at:new Date().toISOString()});
-    $("note-text").value = "";
-    renderNotes(); save();
+    if (!name || !text){ (name ? $("note-text") : $("note-who")).focus(); return; }
+    mine.notes = (mine.notes || []).concat({who:name, text, at:new Date().toISOString()});
+    renderDetail(); save();
   }
 });
 
-renderGates();
-renderNotes();
+renderCounts(); renderWho(); renderReqs(); renderPipe(); renderDetail();
 
 (async () => {
   db = await claude.use("db");
-  if (!db) { $("live").textContent = "共享状态没连上，下面的操作只在这台机器上"; return; }
-  $("live").textContent = "共享状态已连上——所有人看到的是同一份";
+  if (!db) return;
   db.doc("board/state").onSnapshot(
     (snap) => {
-      const data = snap.exists ? snap.data() : null;
-      if (!data) return;
-      state = {gates:data.gates || {}, notes:data.notes || []};
-      renderGates(); renderNotes();
+      const body = snap.exists ? snap.data() : null;
+      if (!body || !body.requests) return;
+      shared = body.requests;
+      renderDetail();
     },
-    (error) => { $("live").textContent = "共享状态断了（" + error.code + "），刷新页面重连"; }
+    () => {}
   );
 })();
 </script>

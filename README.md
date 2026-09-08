@@ -135,6 +135,7 @@ advances a node on its own.
 | 00 需求接单 | `scripts/intake.py` | 陈主管的一句话 → `intake.json` / `brief.json` |
 | 01 检索策略 | `scripts/search_plan.py` | `intake.json` → `plan.json` |
 | 02 素材采集 | `scripts/collect.py` | `plan.json` + 图 → `ledger.json` + 分方向素材目录 |
+| — 看板数据 | `scripts/board_data.py` | `projects/` → `board.json` |
 | 07 出 PPT | `scripts/build_deck.py` | `brief.json` + `.potx` 模版 → 交付 PPT |
 | — 诊断 | `scripts/check_pptx.py`, `scripts/dump_template.py` | 查 PPT 结构 / 看模版排版 |
 
@@ -153,9 +154,18 @@ Instagram is not collected at all.
 
 ### 看板
 
-`board/sheji-board.html` is the published board — the nine nodes, the request in
-flight, the review gates and the channel rules, for supervisors and managers to
-read. It is republished to the same URL as nodes get built, and its gate
-confirmations and notes live in the artifact's own shared store, so they survive
-a republish. It cannot read `ledger.json` off anyone's machine: collection
-figures on it are a snapshot taken at publish time.
+`board/sheji-board.html` is the published board — every supervisor's requests,
+where each one sits in the nine nodes, the review gates and the channel rules.
+Its numbers come from `board_data.py`, which walks `projects/` and decides each
+request's position from **which artefacts exist**, not from a status field
+someone maintains by hand. Refreshing the board is: run the scanner, rebuild the
+page, republish to the same URL.
+
+Gate sign-offs and notes are per request and live in the artifact's own shared
+store, so several people see the same state and a republish does not clear it.
+The page cannot read anyone's `ledger.json`, so its collection figures are a
+snapshot taken when it was published.
+
+The supervisor filter is a filter, not isolation — everyone sees every request.
+Real per-supervisor separation needs viewer identity, which this account's
+artifact runtime does not offer.

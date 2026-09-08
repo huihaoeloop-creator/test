@@ -1,0 +1,41 @@
+{
+  "example": true,
+  "meta": {
+    "req_id": "REQ-2026-0902-WANG",
+    "project": "AW27 男装夹克（示例）",
+    "client": "N 客户",
+    "requester": "王主管",
+    "date": "2026-09-02"
+  },
+  "raw_request": "N 客户要一版男装夹克，机能风，秋冬。",
+  "fields": {
+    "品类": "男装夹克",
+    "季节": "2027 秋冬",
+    "交付日": "2026-09-20",
+    "廓形": "宽松 / 落肩",
+    "色彩倾向": "中性色",
+    "面料": "尼龙 / 涤纶",
+    "目标客群": "25-35 岁",
+    "价格带": "¥599-899",
+    "数量": "2 个方向 × 3 款"
+  },
+  "open_questions": [],
+  "directions": [
+    {
+      "name": "Utility Shell　机能外壳",
+      "terms": [
+        "nylon",
+        "funnel neck",
+        "colour blocking"
+      ]
+    },
+    {
+      "name": "Soft Tailoring　软性剪裁",
+      "terms": [
+        "relaxed fit",
+        "drop shoulder",
+        "neutral palette"
+      ]
+    }
+  ]
+}

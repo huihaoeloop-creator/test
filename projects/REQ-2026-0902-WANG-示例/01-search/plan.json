@@ -1,0 +1,129 @@
+{
+  "meta": {
+    "req_id": "REQ-2026-0902-WANG",
+    "project": "AW27 男装夹克（示例）",
+    "client": "N 客户",
+    "requester": "王主管",
+    "date": "2026-09-02",
+    "node": "01-search-plan",
+    "version": "2026-09-08d"
+  },
+  "target": 60,
+  "keywords": {
+    "core": [
+      "menswear jacket"
+    ],
+    "modifiers": [
+      "relaxed fit",
+      "drop shoulder",
+      "nylon",
+      "polyester",
+      "neutral palette"
+    ],
+    "qualifiers": [],
+    "season": "AW27"
+  },
+  "queries": [
+    "menswear jacket AW27",
+    "relaxed fit menswear jacket AW27",
+    "drop shoulder menswear jacket AW27",
+    "nylon menswear jacket AW27",
+    "polyester menswear jacket AW27",
+    "neutral palette menswear jacket AW27"
+  ],
+  "directions": [
+    {
+      "name": "Utility Shell　机能外壳",
+      "terms": [
+        "nylon",
+        "funnel neck",
+        "colour blocking"
+      ],
+      "queries": [
+        "nylon menswear jacket AW27",
+        "funnel neck menswear jacket AW27",
+        "colour blocking menswear jacket AW27"
+      ],
+      "directions": [
+        {
+          "name": "Utility Shell　机能外壳",
+          "terms": [
+            "nylon",
+            "funnel neck",
+            "colour blocking"
+          ]
+        },
+        {
+          "name": "Soft Tailoring　软性剪裁",
+          "terms": [
+            "relaxed fit",
+            "drop shoulder",
+            "neutral palette"
+          ]
+        }
+      ],
+      "quota": 30
+    },
+    {
+      "name": "Soft Tailoring　软性剪裁",
+      "terms": [
+        "relaxed fit",
+        "drop shoulder",
+        "neutral palette"
+      ],
+      "queries": [
+        "relaxed fit menswear jacket AW27",
+        "drop shoulder menswear jacket AW27",
+        "neutral palette menswear jacket AW27"
+      ],
+      "directions": [
+        {
+          "name": "Utility Shell　机能外壳",
+          "terms": [
+            "nylon",
+            "funnel neck",
+            "colour blocking"
+          ]
+        },
+        {
+          "name": "Soft Tailoring　软性剪裁",
+          "terms": [
+            "relaxed fit",
+            "drop shoulder",
+            "neutral palette"
+          ]
+        }
+      ],
+      "quota": 30
+    }
+  ],
+  "brand_queries": [],
+  "channels": [
+    {
+      "key": "brand",
+      "name": "品牌官网",
+      "mode": "auto",
+      "quota": 18,
+      "license": "内部参考",
+      "note": "仅作内部对标。交付 PPT 必须保留 Sources 页并注明品牌，任何情况下不得当作原创款呈现给客户。"
+    },
+    {
+      "key": "pinterest",
+      "name": "Pinterest",
+      "mode": "auto-api",
+      "quota": 24,
+      "license": "官方 API",
+      "note": "只走官方 API，保留 pin 链接与作者署名；不抓网页、不绕登录。"
+    },
+    {
+      "key": "wgsn",
+      "name": "WGSN / Fashion Snoops",
+      "mode": "manual",
+      "quota": 18,
+      "license": "订阅制，ToS 禁止抓取",
+      "note": "佘吉只产出选片清单（栏目路径 + 关键词 + 目标张数），由持账号的同事手动导出后放进 02 的素材目录。"
+    }
+  ],
+  "unmapped": [],
+  "approved": true
+}

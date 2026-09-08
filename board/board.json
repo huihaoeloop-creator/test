@@ -1,0 +1,269 @@
+{
+  "generated_by": "board_data.py 2026-09-08a",
+  "nodes": [
+    {
+      "n": "00",
+      "name": "需求接单",
+      "script": "intake.py"
+    },
+    {
+      "n": "01",
+      "name": "检索策略",
+      "script": "search_plan.py"
+    },
+    {
+      "n": "02",
+      "name": "素材采集",
+      "script": "collect.py"
+    },
+    {
+      "n": "03",
+      "name": "风格解构",
+      "script": null
+    },
+    {
+      "n": "04",
+      "name": "出图指令",
+      "script": null
+    },
+    {
+      "n": "05",
+      "name": "批量生成",
+      "script": null
+    },
+    {
+      "n": "06",
+      "name": "后期处理",
+      "script": null
+    },
+    {
+      "n": "07",
+      "name": "出 PPT",
+      "script": "build_deck.py"
+    },
+    {
+      "n": "08",
+      "name": "复盘沉淀",
+      "script": null
+    }
+  ],
+  "built": [
+    "00",
+    "01",
+    "02",
+    "07"
+  ],
+  "requesters": [
+    "李主管",
+    "王主管",
+    "陈主管"
+  ],
+  "requests": [
+    {
+      "req_id": "REQ-2026-0902-WANG",
+      "project": "AW27 男装夹克（示例）",
+      "client": "N 客户",
+      "requester": "王主管",
+      "date": "2026-09-02",
+      "example": true,
+      "raw_request": "N 客户要一版男装夹克，机能风，秋冬。",
+      "fields": {
+        "品类": "男装夹克",
+        "季节": "2027 秋冬",
+        "交付日": "2026-09-20",
+        "廓形": "宽松 / 落肩",
+        "色彩倾向": "中性色",
+        "面料": "尼龙 / 涤纶",
+        "目标客群": "25-35 岁",
+        "价格带": "¥599-899",
+        "数量": "2 个方向 × 3 款"
+      },
+      "open_questions": [],
+      "node": "02",
+      "status": "running",
+      "why": "采集中 23/60 张",
+      "target": 60,
+      "collected": 23,
+      "internal_only": 23,
+      "directions": [
+        {
+          "name": "Utility Shell　机能外壳",
+          "terms": [
+            "nylon",
+            "funnel neck",
+            "colour blocking"
+          ],
+          "quota": 30,
+          "got": 12
+        },
+        {
+          "name": "Soft Tailoring　软性剪裁",
+          "terms": [
+            "relaxed fit",
+            "drop shoulder",
+            "neutral palette"
+          ],
+          "quota": 30,
+          "got": 11
+        }
+      ],
+      "directions_status": "",
+      "channels": [
+        {
+          "name": "品牌官网",
+          "mode": "auto",
+          "quota": 18,
+          "license": "内部参考"
+        },
+        {
+          "name": "Pinterest",
+          "mode": "auto-api",
+          "quota": 24,
+          "license": "官方 API"
+        },
+        {
+          "name": "WGSN / Fashion Snoops",
+          "mode": "manual",
+          "quota": 18,
+          "license": "订阅制，ToS 禁止抓取"
+        }
+      ]
+    },
+    {
+      "req_id": "REQ-2026-0905-LI",
+      "project": "SS27 连衣裙企划（示例）",
+      "client": "M 客户",
+      "requester": "李主管",
+      "date": "2026-09-05",
+      "example": true,
+      "raw_request": "M 客户春夏连衣裙，要度假感，月底前给三个方向。",
+      "fields": {
+        "品类": "女装连衣裙",
+        "季节": "2027 春夏",
+        "交付日": "2026-09-30",
+        "廓形": "A 摆 / 收腰",
+        "目标客群": "25-35 岁",
+        "数量": "3 个方向"
+      },
+      "open_questions": [
+        "「度假感」是 A 海岛树脂色 + 轻薄雪纺　B 地中海条纹 + 棉麻　—— 面料和色彩两条路差很远"
+      ],
+      "node": "00",
+      "status": "gate",
+      "why": "1 项待李主管确认",
+      "target": 0,
+      "collected": 0,
+      "internal_only": 0,
+      "directions": [],
+      "directions_status": "",
+      "channels": []
+    },
+    {
+      "req_id": "REQ-2026-0908-SEED",
+      "project": "Seed 女装 秋冬趋势与款式推荐",
+      "client": "Seed（澳洲女装品牌）",
+      "requester": "陈主管",
+      "date": "2026-09-08",
+      "example": false,
+      "raw_request": "Seed 女装做一个秋冬的趋势和款式推荐",
+      "fields": {
+        "品类": "女装毛衣",
+        "季节": "2027 秋冬",
+        "交付日": "2026-09-08",
+        "廓形": "不设限 —— 陈主管明确不给范围，由佘吉在趋势方向里提",
+        "色彩倾向": "不设限 —— 陈主管明确不给范围，由佘吉在趋势方向里提",
+        "面料": "不设限 —— 陈主管明确不给范围，由佘吉在趋势方向里提",
+        "目标客群": "不设限 —— 陈主管明确不给范围，由佘吉在趋势方向里提",
+        "价格带": "不设限 —— 陈主管明确不给范围，由佘吉在趋势方向里提",
+        "数量": "趋势 5 个方向 × 每方向 4 款 = 20 款",
+        "目标品牌": "Seed",
+        "备注": "交付物含两部分：趋势 + 款式推荐。已确认 Seed 指澳洲女装品牌 Seed，本单按「做给 Seed」处理。WGSN 走人工导出（陈主管提出给账号密码，未采纳，见 01 检索策略）。"
+      },
+      "open_questions": [],
+      "node": "01",
+      "status": "gate",
+      "why": "检索式与配额待确认（plan.json approved=false）",
+      "target": 120,
+      "collected": 0,
+      "internal_only": 0,
+      "directions": [
+        {
+          "name": "Elevated Everyday　精致基础",
+          "terms": [
+            "merino",
+            "fine gauge",
+            "tonal",
+            "crew neck"
+          ],
+          "quota": 24,
+          "got": 0
+        },
+        {
+          "name": "Oversized Comfort　宽松舒适",
+          "terms": [
+            "oversized",
+            "drop shoulder",
+            "chunky gauge",
+            "cocoon shape"
+          ],
+          "quota": 24,
+          "got": 0
+        },
+        {
+          "name": "Textural Craft　肌理手作",
+          "terms": [
+            "cable knit",
+            "pointelle",
+            "bobble",
+            "brushed mohair"
+          ],
+          "quota": 24,
+          "got": 0
+        },
+        {
+          "name": "Sporty Layer　运动叠穿",
+          "terms": [
+            "half zip",
+            "funnel neck",
+            "colour blocking",
+            "raglan sleeve"
+          ],
+          "quota": 24,
+          "got": 0
+        },
+        {
+          "name": "Statement Colour　色彩表达",
+          "terms": [
+            "intarsia",
+            "stripe",
+            "argyle",
+            "saturated"
+          ],
+          "quota": 24,
+          "got": 0
+        }
+      ],
+      "directions_status": "佘吉提案，未经陈主管确认；WGSN 导出后需回头校准",
+      "channels": [
+        {
+          "name": "品牌官网",
+          "mode": "auto",
+          "quota": 36,
+          "license": "内部参考"
+        },
+        {
+          "name": "Pinterest",
+          "mode": "auto-api",
+          "quota": 48,
+          "license": "官方 API"
+        },
+        {
+          "name": "WGSN / Fashion Snoops",
+          "mode": "manual",
+          "quota": 36,
+          "license": "订阅制，ToS 禁止抓取"
+        }
+      ]
+    }
+  ]
+}
