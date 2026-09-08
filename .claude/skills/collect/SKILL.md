@@ -92,17 +92,56 @@ python -X utf8 scripts/collect.py --plan plan.json --pinterest-board 1234567890 
 **小红书的笔记图绝不能进任何交付物。** 那是个人创作者的作品，搬运和洗稿的
 法律风险是实的。内部参考可以，出现在给客户的东西里不行。
 
-## 出处要落到单张
+## 主管交过来的图，怎么标出处
 
-导出目录里放一份 `sources.csv`，逐张登记：
+**别让人去填 CSV。** 在那个文件夹里放一个 `来源.txt`，两行就够：
 
-```csv
-filename,source_url,author,note
-KeyItem_01.png,https://www.wgsn.com/fashion/article/111,WGSN,AW27 Knitwear Key Items
+```
+渠道：wgsn
+来源：WGSN AW27 Knitwear Key Items（陈主管 09-08 给）
+链接：https://www.wgsn.com/fashion/article/999
+作者：WGSN
 ```
 
-没有它，出处只记到 `--source` 那个批次级别，台账标 `provenance: batch`——
-`--check` 会点名，因为 Sources 页写不出单张来源。
+中英文冒号都认，`source.txt` 也认。只写一行不带前缀的，当成来源说明。
+想逐张给链接，再加这样的行：
+
+```
+003.jpg = https://www.wgsn.com/fashion/article/1001
+```
+
+`渠道：` 那行会覆盖命令行的 `--channel`，所以主管在 txt 里写清楚了，
+收的人就不用记该传什么参数。
+
+脚本产出的目录（`brand_collect.mjs` 的输出）继续用 `sources.csv`，两者都有时
+CSV 更精确，压过 `来源.txt`。
+
+### 没见过的渠道
+
+陈主管给的图来自某个没查过的站（比如 WOW），照收，但会：
+
+```
+提醒：渠道「wow」不在已知渠道表里 —— 授权边界没查过，
+      这批图标成 license_checked=false，用之前得先确认能不能用
+```
+
+台账里 `license_checked: false`，`--check` 每次都会点名，直到有人确认了授权、
+把这个渠道加进 `collect.py` 的 `USE` 表。**没查过就不能假设能用。**
+
+### 批次链接不冒充逐张出处
+
+`来源.txt` 里的 `链接：` 记进 `batch_url`，**不写进 `source_url`**。
+它说的是「这批图来自哪份报告」，不是「这张图在哪」。混进去会让出处完整度
+显示成逐张都有，Sources 页那时就写不出东西了。
+
+## 台账怎么给人看
+
+```
+python -X utf8 scripts/collect.py --plan plan.json --export-csv 台账.csv
+```
+
+`ledger.json` 是给脚本读的。要给陈主管核对出处，导成 CSV（带 UTF-8 BOM，
+Excel 直接开不乱码），第一列就是「能否交付」。
 
 ## 对账
 

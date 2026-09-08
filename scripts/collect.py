@@ -36,11 +36,13 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-VERSION = "2026-09-08c"
+VERSION = "2026-09-08d"
 
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff", ".bmp"}
 
 # 渠道 → 这张图能用到哪一步。节点 07 出交付页时要读这个字段。
+# 这张表里有的，授权边界是查过的；表里没有的（陈主管临时给的某个站），
+# 按 internal + license_checked=false 处理 —— 没查过就不能假设能用。
 USE = {
     "client":    "internal",   # 客户官网：客户现有款，是基准不是提案
     "brand":     "internal",   # 对标品牌官网：只能内部对标，不进客户交付页
@@ -124,6 +126,54 @@ def save_ledger(root, ledger):
 # --------------------------------------------------------------------------
 
 
+def read_note(folder):
+    """读目录里的「来源.txt」。
+
+    sources.csv 是给脚本产出的目录用的。人（比如陈主管）手动整理一批图交过来时，
+    不该要求他去填 CSV —— 他会在文件夹里丢个 txt，写两行字。这里就认这个。
+
+    格式随意，认这几个前缀（中英文冒号都行）：
+        渠道: wgsn
+        来源: WGSN AW27 Knitwear Key Items
+        链接: https://www.wgsn.com/...
+        001.jpg = https://...        ← 想逐张给链接也可以
+    第一行没有前缀的，当成来源说明。
+    """
+    for name in ("来源.txt", "source.txt", "来源.md"):
+        path = Path(folder) / name
+        if path.exists():
+            break
+    else:
+        return {}, {}
+
+    batch, per_file = {}, {}
+    for raw in path.read_text(encoding="utf-8-sig").splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        if "=" in line and re.match(r"^[^=]+\.(jpe?g|png|webp|tif f?|bmp)\s*=", line, re.I):
+            name, value = line.split("=", 1)
+            per_file[name.strip()] = {"source_url": value.strip(), "author": "", "note": ""}
+            continue
+        separator = "：" if "：" in line else (":" if ":" in line else "")
+        if separator:
+            key, value = (part.strip() for part in line.split(separator, 1))
+        else:
+            key, value = "", line
+        key = key.lower()
+        if key in ("渠道", "channel", "平台"):
+            batch["channel"] = value
+        elif key in ("来源", "source", "出处", "报告"):
+            batch["source"] = value
+        elif key in ("链接", "url", "网址"):
+            batch["url"] = value
+        elif key in ("作者", "author", "品牌", "店铺"):
+            batch["author"] = value
+        elif not batch.get("source"):
+            batch["source"] = line          # 没有前缀的第一行，就当来源说明
+    return batch, per_file
+
+
 def read_sidecar(folder):
     """导出目录里可以放一份 sources.csv：filename,source_url,author,note
 
@@ -196,6 +246,17 @@ def ingest(root, plan, folder, channel, direction, source, ledger):
         sys.exit(f"目录不存在：{folder}")
 
     sidecar = read_sidecar(src)
+    note_batch, note_files = read_note(src)
+    sidecar = {**note_files, **sidecar}       # sources.csv 更精确，压过 来源.txt
+    if note_batch.get("channel") and channel == "wgsn":
+        channel = note_batch["channel"]       # 命令行没特意指定时，认 txt 里写的
+    source = source or note_batch.get("source", "")
+
+    if channel not in USE:
+        print(f"  提醒：渠道「{channel}」不在已知渠道表里 —— "
+              f"授权边界没查过，这批图标成 license_checked=false，"
+              f"用之前得先确认能不能用")
+
     dest_dir = Path(root) / slug(direction["name"]) / channel
     dest_dir.mkdir(parents=True, exist_ok=True)
 
@@ -210,7 +271,9 @@ def ingest(root, plan, folder, channel, direction, source, ledger):
             duplicate += 1
             continue
 
-        dest = dest_dir / f"{digest[:12]}{path.suffix.lower()}"
+        # 文件名带渠道前缀：图被人从目录里拷出去之后，路径没了，
+        # 名字还说得出它是哪来的
+        dest = dest_dir / f"{channel}_{digest[:12]}{path.suffix.lower()}"
         shutil.copy2(path, dest)
 
         meta = sidecar.get(path.name, {})
@@ -221,10 +284,14 @@ def ingest(root, plan, folder, channel, direction, source, ledger):
             "original_name": path.name,
             "channel": channel,
             "use": USE.get(channel, "internal"),
+            "license_checked": channel in USE,
             "direction": direction["name"],
             "source": source or "",
+            # 批次链接（来源.txt 里那一条）不写进 source_url —— 它是"这批图来自
+            # 哪份报告"，不是"这张图在哪"。混进去会让 provenance 显示成逐张有出处。
             "source_url": meta.get("source_url", ""),
-            "author": meta.get("author", ""),
+            "batch_url": note_batch.get("url", ""),
+            "author": meta.get("author", "") or note_batch.get("author", ""),
             "note": meta.get("note", ""),
             "bytes": dest.stat().st_size,
             "collected_at": now(),
@@ -236,8 +303,14 @@ def ingest(root, plan, folder, channel, direction, source, ledger):
 
     print(f"收入 {added} 张，跳过重复 {duplicate} 张 → {dest_dir}")
     if added and not sidecar:
-        print("  没找到 sources.csv，出处只记到批次级别。"
-              "逐张出处要在导出目录放一份 sources.csv（filename,source_url,author,note）")
+        if note_batch:
+            print(f"  出处记到批次级别：{note_batch.get('source', '')}")
+            print("  要逐张的话，在 来源.txt 里按「文件名 = 链接」补几行就行")
+        else:
+            print("  没有出处。在这个目录里放一个 来源.txt，写两行：")
+            print("      渠道：wgsn")
+            print("      来源：WGSN AW27 Knitwear Key Items")
+            print("  逐张链接再加「001.jpg = https://...」这样的行")
     return added
 
 
@@ -288,7 +361,7 @@ def pinterest_board(root, board_id, direction, ledger, limit):
             digest = hashlib.sha256(blob).hexdigest()
             if digest in known:
                 continue
-            dest = dest_dir / f"{digest[:12]}.jpg"
+            dest = dest_dir / f"pinterest_{digest[:12]}.jpg"
             dest.write_bytes(blob)
             entry = {
                 "id": digest[:12],
@@ -364,6 +437,40 @@ def status(plan, ledger):
     print(f"\n合计 {len(items)} 张，其中 {internal} 张仅限内部参考，不得进客户交付页")
 
 
+def export_csv(root, ledger, path):
+    """把台账导成 Excel 打得开的表。
+
+    ledger.json 是给脚本读的；陈主管要核对出处时得有张表能直接打开。
+    列的顺序按「先看能不能用，再看哪来的」排。
+    """
+    columns = ["能否交付", "渠道", "授权已核", "方向", "文件", "出处",
+               "本张链接", "批次链接", "作者", "说明", "收入时间"]
+    rows = []
+    for item in ledger["items"]:
+        rows.append([
+            "仅内部" if item.get("use") == "internal" else "可交付",
+            item.get("channel", ""),
+            "是" if item.get("license_checked", True) else "否 ← 待确认",
+            item.get("direction", ""),
+            item.get("file", ""),
+            item.get("source", ""),
+            item.get("source_url", ""),
+            item.get("batch_url", ""),
+            item.get("author", ""),
+            item.get("note", ""),
+            item.get("collected_at", ""),
+        ])
+    out = Path(path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    # Excel 认 UTF-8 BOM，不带的话中文会乱码
+    with out.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(columns)
+        writer.writerows(rows)
+    print(f"已导出 {out}（{len(rows)} 行，Excel 直接打开）")
+    return out
+
+
 def check(root, ledger):
     """台账与磁盘对账。"""
     problems = []
@@ -375,6 +482,9 @@ def check(root, ledger):
         seen.add(str(path.resolve()))
         if item.get("provenance") == "missing":
             problems.append(f"没有出处：{item['file']}（{item['channel']}）")
+        if item.get("license_checked") is False:
+            problems.append(f"渠道授权没查过：{item['file']}（{item['channel']}）"
+                            f" —— 确认能用之后，把这个渠道加进 collect.py 的 USE 表")
 
     for path in Path(root).rglob("*"):
         if path.is_file() and path.suffix.lower() in IMAGE_EXT:
@@ -414,6 +524,7 @@ def main():
     parser.add_argument("--limit", type=int, help="本次最多收多少张，默认吃满该方向配额")
     parser.add_argument("--status", action="store_true", help="进度对配额")
     parser.add_argument("--check", action="store_true", help="台账与磁盘对账")
+    parser.add_argument("--export-csv", metavar="FILE", help="把台账导成 Excel 能打开的表")
     args = parser.parse_args()
 
     print(f"collect 版本 {VERSION}", file=sys.stderr)
@@ -443,6 +554,10 @@ def main():
             pinterest_board(root, args.pinterest_board, direction, ledger, limit)
 
         save_ledger(root, ledger)
+        did_work = True
+
+    if args.export_csv:
+        export_csv(root, ledger, args.export_csv)
         did_work = True
 
     if args.status or not did_work and not args.check:
