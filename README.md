@@ -126,6 +126,14 @@ tests/               specs
 
 ## Design workflow (佘吉)
 
+The single authoritative spec is `docs/设计工作流.html` (V3.0), which merges the
+former 佘吉设计工作流 V1 and 外贸设计开发流程 V2.0 — both are superseded. It
+reconciles five conflicts between them against what is actually implemented:
+WGSN and Instagram cannot be auto-collected, the "one hour, fully automatic"
+SLA does not survive three manual channels, Midjourney has no API so Ideogram
+is the workhorse, background removal is Pillow rather than rembg, and there are
+three review gates rather than eight.
+
 Scripts for the design-request pipeline, one per workflow node. Each writes a
 JSON artefact the next node reads, and each stops for human review — nothing
 advances a node on its own.

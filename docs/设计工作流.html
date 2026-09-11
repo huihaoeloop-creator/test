@@ -1,0 +1,618 @@
+<title>设计工作流</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;900&family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --paper:#EEEAE0; --surface:#F8F5EE; --sunk:#E4DFD2;
+  --line:#D8D1BF; --line-strong:#C0B69E;
+  --ink:#1E2127; --ink-2:#4E535C; --ink-3:#82857F;
+  --run:#26466F; --run-soft:#DFE6F0;      /* 佘吉执行 */
+  --gate:#9C3F2E; --gate-soft:#F3E0DA;    /* 人工关卡 */
+  --done:#3F6B4A; --done-soft:#DEEADF;    /* 已建成 */
+  --warn:#7C5C12; --warn-soft:#EFE6CC;
+  --serif:"Noto Serif SC","Songti SC",Georgia,serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#15171A; --surface:#1D2024; --sunk:#111316;
+  --line:#31353B; --line-strong:#474C53;
+  --ink:#E8E4DA; --ink-2:#AFB3B9; --ink-3:#7E8289;
+  --run:#8FAFD9; --run-soft:#1B2733;
+  --gate:#D7897A; --gate-soft:#32211E;
+  --done:#8AB593; --done-soft:#1B2A1F;
+  --warn:#D2B36A; --warn-soft:#2C2517;
+}}
+:root[data-theme="dark"]{
+  --paper:#15171A; --surface:#1D2024; --sunk:#111316;
+  --line:#31353B; --line-strong:#474C53;
+  --ink:#E8E4DA; --ink-2:#AFB3B9; --ink-3:#7E8289;
+  --run:#8FAFD9; --run-soft:#1B2733;
+  --gate:#D7897A; --gate-soft:#32211E;
+  --done:#8AB593; --done-soft:#1B2A1F;
+  --warn:#D2B36A; --warn-soft:#2C2517;
+}
+*{box-sizing:border-box}
+body{background:var(--paper); color:var(--ink); font-family:var(--sans);
+  font-size:15px; line-height:1.75; margin:0; -webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--serif); margin:0; text-wrap:balance}
+h1{font-size:clamp(28px,5vw,42px); font-weight:900; letter-spacing:-.01em; line-height:1.2}
+h2{font-size:24px; font-weight:700}
+h3{font-size:17px; font-weight:600}
+p{margin:0}
+.mono{font-family:var(--mono)}
+.wrap{max-width:960px; margin:0 auto; padding:52px 24px 88px;
+  display:flex; flex-direction:column; gap:56px}
+.eyebrow{font-family:var(--mono); font-size:11px; font-weight:600;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3)}
+.lede{font-size:16.5px; color:var(--ink-2); max-width:62ch}
+section{display:flex; flex-direction:column; gap:20px}
+.sec-head{display:flex; flex-direction:column; gap:7px;
+  border-top:2px solid var(--ink); padding-top:14px}
+
+/* cover */
+header{display:flex; flex-direction:column; gap:16px}
+.title-row{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
+.chip{font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.1em;
+  padding:3px 9px; border-radius:2px; white-space:nowrap;
+  color:var(--run); background:var(--run-soft); border:1px solid var(--run)}
+.meta{display:grid; grid-template-columns:repeat(auto-fit,minmax(146px,1fr));
+  gap:1px; background:var(--line); border:1px solid var(--line); margin-top:4px}
+.meta div{background:var(--paper); padding:11px 14px; display:flex; flex-direction:column; gap:2px}
+.meta dt{font-family:var(--mono); font-size:10px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink-3)}
+.meta dd{margin:0; font-size:14px; font-weight:500}
+
+/* 合并说明 */
+.merge{border-left:3px solid var(--warn); background:var(--warn-soft);
+  padding:18px 22px; display:flex; flex-direction:column; gap:10px}
+.merge h3{font-size:15px}
+.merge p,.merge li{font-size:14px; color:var(--ink)}
+.merge ul{margin:0; padding-left:18px; display:flex; flex-direction:column; gap:7px}
+
+/* 状态板 */
+.status{display:grid; grid-template-columns:repeat(auto-fit,minmax(104px,1fr));
+  gap:1px; background:var(--line); border:1px solid var(--line)}
+.st{background:var(--surface); padding:14px 10px; display:flex; flex-direction:column;
+  align-items:center; gap:4px; text-align:center}
+.st b{font-family:var(--mono); font-size:19px; font-weight:600; line-height:1}
+.st span{font-size:12.5px}
+.st i{font-family:var(--mono); font-style:normal; font-size:10px; color:var(--ink-3)}
+.st.on{background:var(--done-soft)} .st.on b{color:var(--done)}
+.st.off b{color:var(--ink-3)} .st.off span{color:var(--ink-3)}
+
+/* 边界卡 */
+.cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px}
+.card{border:1px solid var(--line); background:var(--surface); padding:17px 19px;
+  display:flex; flex-direction:column; gap:8px}
+.card.run{border-left:3px solid var(--run)}
+.card.gate{border-left:3px solid var(--gate)}
+.card.warn{border-left:3px solid var(--warn)}
+.card h3{font-size:15px}
+.card p{font-size:13.5px; color:var(--ink-2)}
+
+/* 阶段↔节点 映射 */
+.map{display:flex; flex-direction:column; gap:10px}
+.phase{border:1px solid var(--line); background:var(--surface)}
+.phase-top{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+  padding:13px 18px; border-bottom:1px solid var(--line)}
+.phase-top .tag{font-family:var(--mono); font-size:10px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3)}
+.phase-top h3{flex:1 0 auto}
+.phase-top .who{font-size:12px; color:var(--ink-3)}
+.phase-nodes{display:flex; flex-wrap:wrap; gap:8px; padding:13px 18px}
+.nd{font-family:var(--mono); font-size:12px; padding:3px 10px; border-radius:2px;
+  border:1px solid var(--line-strong); background:var(--paper); color:var(--ink-2)}
+.nd.on{border-color:var(--done); color:var(--done); background:var(--done-soft)}
+.gatebar{background:var(--gate-soft); border-top:1px solid var(--line);
+  padding:11px 18px; display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap}
+.gatebar .gt{font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.1em;
+  color:var(--gate); border:1px solid var(--gate); padding:2px 7px; flex:none; margin-top:3px}
+.gatebar p{font-size:13.5px; flex:1 1 280px}
+
+/* 表 */
+.scroll{overflow-x:auto; border:1px solid var(--line)}
+table{border-collapse:collapse; width:100%; min-width:600px;
+  background:var(--surface); font-size:13.5px}
+th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top}
+th{font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink-3); background:var(--sunk);
+  border-bottom:1px solid var(--line-strong)}
+tbody tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+.pill{display:inline-block; font-family:var(--mono); font-size:10.5px;
+  padding:1px 7px; border:1px solid currentColor; white-space:nowrap}
+.pill.api{color:var(--run)} .pill.semi{color:var(--warn)} .pill.man{color:var(--gate)}
+.pill.no{color:var(--gate); background:var(--gate-soft)}
+code{font-family:var(--mono); font-size:.88em; background:var(--sunk); padding:1px 4px; border-radius:2px}
+
+/* 节点详解 */
+.nodes{display:flex; flex-direction:column; gap:12px}
+.node{background:var(--surface); border:1px solid var(--line);
+  display:grid; grid-template-columns:70px 1fr}
+.node-n{background:var(--sunk); border-right:1px solid var(--line);
+  display:flex; flex-direction:column; align-items:center; padding-top:16px; gap:3px}
+.node-n b{font-family:var(--mono); font-size:22px; font-weight:600; color:var(--run); line-height:1}
+.node-n i{font-family:var(--mono); font-style:normal; font-size:9px;
+  letter-spacing:.08em; color:var(--ink-3)}
+.node.built .node-n b{color:var(--done)}
+.node-head{padding:14px 20px 10px; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap}
+.node-head h3{font-size:17px}
+.node-head .src{font-family:var(--mono); font-size:11px; color:var(--ink-3); margin-left:auto}
+.node-head .src.on{color:var(--done)}
+.node-grid{display:grid; grid-template-columns:1fr 1.5fr 1fr; gap:1px;
+  background:var(--line); border-top:1px solid var(--line)}
+.cell{background:var(--surface); padding:13px 20px 15px; display:flex; flex-direction:column; gap:6px}
+.cell h4{font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--ink-3)}
+.cell ul{margin:0; padding-left:15px; display:flex; flex-direction:column; gap:5px}
+.cell li,.cell p{font-size:13px; line-height:1.65}
+
+/* 红线 */
+.redline{border:1px solid var(--gate); background:var(--gate-soft); padding:20px 22px;
+  display:flex; flex-direction:column; gap:12px}
+.redline h3{color:var(--gate)}
+.redline ol{margin:0; padding-left:19px; display:flex; flex-direction:column; gap:9px}
+.redline li{font-size:14px; line-height:1.7}
+
+pre.tree{margin:0; font-family:var(--mono); font-size:12.5px; line-height:1.85;
+  background:var(--surface); border:1px solid var(--line);
+  padding:18px 20px; overflow-x:auto; color:var(--ink-2)}
+pre.tree b{color:var(--ink); font-weight:600}
+pre.tree i{color:var(--ink-3); font-style:normal}
+
+footer{border-top:1px solid var(--line); padding-top:16px;
+  font-family:var(--mono); font-size:12px; color:var(--ink-3);
+  display:flex; flex-wrap:wrap; gap:6px 18px}
+a{color:var(--run)}
+:focus-visible{outline:2px solid var(--run); outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:720px){
+  .wrap{padding:34px 16px 60px; gap:44px}
+  .node{grid-template-columns:54px 1fr}
+  .node-grid{grid-template-columns:1fr}
+  .node-head .src{margin-left:0}
+}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="title-row">
+    <p class="eyebrow">V3.0 · 合并稿</p>
+    <span class="chip">AGENT / 佘吉</span>
+  </div>
+  <h1>设计工作流</h1>
+  <p class="lede">
+    把「客户提风格 → 人工翻官网、刷 Pinterest、一张张生图抠图、手动排版」这条每次都要重来的机械链路，
+    压成一条带审核关卡的流水线。陈主管仍然做全部审美决策，佘吉负责把选择题整理好递到他面前。
+  </p>
+  <dl class="meta">
+    <div><dt>任务触发</dt><dd>主管布置设计需求</dd></div>
+    <div><dt>服务对象</dt><dd>N 位设计主管</dd></div>
+    <div><dt>最终交付</dt><dd>主管模板的 .pptx</dd></div>
+    <div><dt>建成进度</dt><dd>9 个节点已建成 7 个</dd></div>
+    <div><dt>版本</dt><dd>V3.0 · 2026-09-11</dd></div>
+  </dl>
+</header>
+
+<div class="merge">
+  <h3>这一版合并了什么，改了什么</h3>
+  <p>《佘吉设计工作流 V1》（九节点技术方案）与《外贸设计开发流程 V2.0》（四阶段业务方案）本来就是同一个项目的两个视角，此版合为一份。<strong>两份旧稿到此作废，以本稿为准。</strong></p>
+  <p>合并时发现五处互相矛盾，按已经跑通的实现定稿，没有含糊并存：</p>
+  <ul>
+    <li><strong>采集渠道</strong>：V2.0 写「Agent 自动遍历品牌官网、WGSN、Instagram、Pinterest」——<strong>WGSN 和 Instagram 的 ToS 禁止自动抓取</strong>，佘吉只出选品清单。已按此改写。</li>
+    <li><strong>Agent 耗时</strong>：V2.0 的「约 1 小时全自动」建立在四渠道全自动的前提上。实际有三个人工渠道 + Midjourney 需人工粘贴，<strong>时间表按人工节奏重算</strong>。</li>
+    <li><strong>生图主力</strong>：V2.0 以 Midjourney 为衍生主力——<strong>MJ 没有官方 API</strong>，第三方中转违反 ToS。主力改为 Ideogram（公司已有专业版月付）。</li>
+    <li><strong>抠图方案</strong>：V1 建议 rembg。实测机器上没有 rembg / numpy / OpenCV，<strong>改用 Pillow 的边缘漫填</strong>，对白底棚拍图反而更准。</li>
+    <li><strong>关卡数量</strong>：V1 说八道、V2.0 说三道。改为 <strong>3 道主关卡（主管坐下来看）+ 5 道文件级确认（改一个 flag）</strong>，不再两套说法。</li>
+  </ul>
+</div>
+
+<section>
+  <div class="sec-head">
+    <p class="eyebrow">当前状态</p>
+    <h2>九个节点，建成七个</h2>
+    <p class="lede">深色=已建成并跑通，浅色=未建。这是实际的脚本状态，不是计划。</p>
+  </div>
+  <div class="status">
+    <div class="st on"><b>00</b><span>需求接单</span><i>intake.py</i></div>
+    <div class="st on"><b>01</b><span>检索策略</span><i>search_plan.py</i></div>
+    <div class="st on"><b>02</b><span>素材采集</span><i>collect.py</i></div>
+    <div class="st on"><b>03</b><span>风格解构</span><i>decompose.py</i></div>
+    <div class="st on"><b>04</b><span>出图指令</span><i>prompts.py</i></div>
+    <div class="st off"><b>05</b><span>批量生成</span><i>未建</i></div>
+    <div class="st on"><b>06</b><span>后期处理</span><i>postprocess.py</i></div>
+    <div class="st on"><b>07</b><span>出 PPT</span><i>build_deck.py</i></div>
+    <div class="st off"><b>08</b><span>复盘沉淀</span><i>未建</i></div>
+  </div>
+  <p class="lede">配套还有：<code>board_data.py</code> 扫描全部在办单、<code>serve.py</code> 本地部署看板、<code>brand_collect.mjs</code> 品牌官网采集、<code>check_pptx.py</code> 查 PPT 结构。</p>
+</section>
+
+<section>
+  <div class="sec-head">
+    <p class="eyebrow">前置共识</p>
+    <h2>先把佘吉的边界钉死</h2>
+    <p class="lede">这三条不先说清楚，后面每个节点的验收都会跑偏——最常见的失败是佘吉开始替人做审美判断，或者把挑图的苦力转嫁给主管。</p>
+  </div>
+  <div class="cards">
+    <div class="card run">
+      <h3>佘吉做：可穷举的机械劳动</h3>
+      <p>检索词中英展开、跨站采集与去重、要素打标、prompt 批量生成、抠图与规格统一、按模板灌 PPT、参数与来源留痕。</p>
+    </div>
+    <div class="card gate">
+      <h3>佘吉不做：审美与商业判断</h3>
+      <p>哪张图「像这个品牌」、哪个方向「客户会买单」、要不要为成本换面料——全部由主管定。佘吉只把候选整理成编号清晰、可一眼比对的选择题。</p>
+    </div>
+    <div class="card warn">
+      <h3>佘吉必须留痕：来源与授权</h3>
+      <p>每张素材强制记录来源、渠道、采集时间、<strong>可否进交付件</strong>。渠道不在已知授权表里的，标 <code>license_checked:false</code>，每次对账都点名。</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <p class="eyebrow">两个视角</p>
+    <h2>主管看四阶段，佘吉跑九节点</h2>
+    <p class="lede">同一条流程的两种说法。主管只需要知道自己什么时候要看、看什么；九个节点是佘吉内部的执行粒度。</p>
+  </div>
+  <div class="map">
+
+    <div class="phase">
+      <div class="phase-top"><span class="tag">阶段一</span><h3>需求接收与判断</h3><span class="who">佘吉 · 分钟级</span></div>
+      <div class="phase-nodes"><span class="nd on">00 需求接单</span><span class="nd on">01 检索策略</span></div>
+      <div class="gatebar">
+        <span class="gt">主关卡 ①</span>
+        <p>主管确认<b>需求确认单</b>与<b>检索式、配额、趋势方向</b>。<b>这是全流程 ROI 最高的一步</b>——在这里花 5 分钟消歧，比第 5 节点返工 2 小时便宜。确认后把 <code>plan.json</code> 的 <code>approved</code> 改成 <code>true</code>，节点 02 才开工。</p>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-top"><span class="tag">阶段二</span><h3>素材采集与解构</h3><span class="who">佘吉自动 + 三个人工渠道</span></div>
+      <div class="phase-nodes"><span class="nd on">02 素材采集</span><span class="nd on">03 风格解构</span></div>
+      <div class="gatebar">
+        <span class="gt">主关卡 ②</span>
+        <p>主管看<b>联系表</b>剔掉跑偏的，并<b>补齐风格要素表里脚本判断不了的六项</b>（廓形、领型、克重、工艺、袖型、长度）。这六项不填，节点 04 以退出码 1 拒绝往下走。</p>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-top"><span class="tag">阶段三</span><h3>出图指令与批量生成</h3><span class="who">佘吉 + 人工粘贴 MJ</span></div>
+      <div class="phase-nodes"><span class="nd on">04 出图指令</span><span class="nd">05 批量生成</span></div>
+      <div class="gatebar">
+        <span class="gt">文件级确认</span>
+        <p>主管审 prompt，<b>重点审「不要什么」</b>。排除项写不准是浪费额度的头号原因。生成走<b>两拍式</b>：先每方向 4 张试水，通过了再放量——<b>绝不一次性出 200 张让主管挑</b>，那只是把挑图的苦力换个人承担。</p>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-top"><span class="tag">阶段四</span><h3>后期处理与交付</h3><span class="who">佘吉 · 分钟级</span></div>
+      <div class="phase-nodes"><span class="nd on">06 后期处理</span><span class="nd on">07 出 PPT</span><span class="nd">08 复盘沉淀</span></div>
+      <div class="gatebar">
+        <span class="gt">主关卡 ③</span>
+        <p>主管终审正反两视图与 PPT。<b>Sources 页不可删</b>——这页是灵感图与原创方案的法律分界线。</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <p class="eyebrow">拆解</p>
+    <h2>逐节点：输入、动作、产出</h2>
+    <p class="lede">每个关卡的产出物都必须「一屏看完」。让主管翻二十个文件夹的关卡，等于没设关卡。</p>
+  </div>
+  <div class="nodes">
+
+    <article class="node built">
+      <div class="node-n"><b>00</b><i>INTAKE</i></div>
+      <div>
+        <div class="node-head"><h3>需求接单与结构化</h3><span class="src on">intake.py</span></div>
+        <div class="node-grid">
+          <div class="cell"><h4>输入</h4><p>主管一句话需求，通常含糊：「Seed 女装做一个秋冬的趋势和款式推荐」。</p></div>
+          <div class="cell"><h4>佘吉动作</h4><ul>
+            <li>原话<strong>原样抄进</strong> <code>raw_request</code>，不改写</li>
+            <li>拆成结构化字段；<strong>推不出的一律留空，不编</strong></li>
+            <li>比对历史单，标出相似案例与当时采纳的方向</li>
+            <li>主动列 3–5 条<strong>待确认歧义项，每条带选项</strong></li>
+          </ul></div>
+          <div class="cell"><h4>产出物</h4><p>《需求确认单》：我的理解 + 待确认项 + 相似历史案例。<br>必填项缺失时<strong>退出码 1</strong>。</p></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="node built">
+      <div class="node-n"><b>01</b><i>PLAN</i></div>
+      <div>
+        <div class="node-head"><h3>检索策略</h3><span class="src on">search_plan.py</span></div>
+        <div class="node-grid">
+          <div class="cell"><h4>输入</h4><p>已确认的需求单。</p></div>
+          <div class="cell"><h4>佘吉动作</h4><ul>
+            <li>中→英检索词矩阵；<strong>查不到的不猜</strong>，列进「需补英文」</li>
+            <li>中文平台（淘宝、小红书）用<strong>英→中反查</strong>，同义词都给（绞花/麻花）</li>
+            <li>按趋势方向拆检索式，按渠道分配配额</li>
+            <li>给每个人工渠道<strong>自动生成选品清单</strong></li>
+          </ul></div>
+          <div class="cell"><h4>产出物</h4><p><code>plan.json</code>（<code>approved:false</code> 出厂）+ 各人工渠道的 <code>picklist-*.md</code>。</p></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="node built">
+      <div class="node-n"><b>02</b><i>COLLECT</i></div>
+      <div>
+        <div class="node-head"><h3>素材采集与出处台账</h3><span class="src on">collect.py · brand_collect.mjs</span></div>
+        <div class="node-grid">
+          <div class="cell"><h4>输入</h4><p>已批准的 <code>plan.json</code>；主管打包的 zip（<strong>文件夹名就是渠道名</strong>）。</p></div>
+          <div class="cell"><h4>佘吉动作</h4><ul>
+            <li>客户/对标官网：Playwright 采集，<strong>先读 robots.txt，Disallow 就不抓</strong>，无绕过开关</li>
+            <li>按商品名撞方向检索词<strong>自动归类</strong>；撞不上的进「待归类」，不瞎猜</li>
+            <li>sha256 跨渠道去重；统一改名 <code>&lt;渠道&gt;_&lt;哈希&gt;</code></li>
+            <li>逐张登记出处；<strong>批次链接不冒充逐张出处</strong></li>
+          </ul></div>
+          <div class="cell"><h4>产出物</h4><p><code>ledger.json</code> 台账 + 分方向素材目录。<code>--check</code> 三向对账，<code>--handoff</code> 导给主管的图。</p></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="node built">
+      <div class="node-n"><b>03</b><i>DECODE</i></div>
+      <div>
+        <div class="node-head"><h3>风格解构</h3><span class="src on">decompose.py</span></div>
+        <div class="node-grid">
+          <div class="cell"><h4>输入</h4><p>台账 + 素材图。</p></div>
+          <div class="cell"><h4>佘吉动作</h4><ul>
+            <li><strong>算得出来的</strong>：配色（避开白底提取）、高频词、渠道构成</li>
+            <li><strong>算不出来的留空</strong>：廓形、领型、克重、工艺、袖型、长度——要看图</li>
+            <li>配色可信度自检：白底丢太多会明说「这份配色会偏」</li>
+            <li>高频词做<strong>采集跑偏的交叉检查</strong></li>
+          </ul></div>
+          <div class="cell"><h4>产出物</h4><p><code>style.json</code>。待填项由人补，<strong>重跑不清空已填的</strong>。</p></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="node built">
+      <div class="node-n"><b>04</b><i>PROMPT</i></div>
+      <div>
+        <div class="node-head"><h3>出图指令</h3><span class="src on">prompts.py</span></div>
+        <div class="node-grid">
+          <div class="cell"><h4>输入</h4><p>已补齐的 <code>style.json</code>。</p></div>
+          <div class="cell"><h4>佘吉动作</h4><ul>
+            <li><strong>一款两条</strong>：正面 + 背面，成对生成</li>
+            <li>四款靠<strong>方向检索词轮换 + 主色轮换</strong>区分，两个轴都来自已批准的数据</li>
+            <li>配色 hex 转形容词（<code>#BFB7AA</code> → muted light beige），固定映射</li>
+            <li>按工具出不同文件，显式写 negative 与参数</li>
+          </ul></div>
+          <div class="cell"><h4>产出物</h4><p><code>prompts.json</code> + 每工具一份 txt。<strong>风格要素没填全则退出码 1</strong>。</p></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="node">
+      <div class="node-n"><b>05</b><i>GENERATE</i></div>
+      <div>
+        <div class="node-head"><h3>两拍式批量生成</h3><span class="src">未建</span></div>
+        <div class="node-grid">
+          <div class="cell"><h4>输入</h4><p>已审 prompt 包。</p></div>
+          <div class="cell"><h4>计划动作</h4><ul>
+            <li><strong>第一拍</strong>：每方向 4 张试水，立即送审</li>
+            <li><strong>第二拍</strong>：只对通过的方向放量</li>
+            <li>Ideogram 走官方 API（<code>IDEOGRAM_API_KEY</code> 环境变量）</li>
+            <li>Midjourney 人工粘贴后回灌，佘吉负责收图与登记</li>
+            <li>记录 seed 与参数，任意一张可复现</li>
+          </ul></div>
+          <div class="cell"><h4>产出物</h4><p>生图结果 + <code>params.json</code> 参数台账。</p></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="node built">
+      <div class="node-n"><b>06</b><i>RETOUCH</i></div>
+      <div>
+        <div class="node-head"><h3>抠图与规格统一</h3><span class="src on">postprocess.py</span></div>
+        <div class="node-grid">
+          <div class="cell"><h4>输入</h4><p>选定的出图。</p></div>
+          <div class="cell"><h4>佘吉动作</h4><ul>
+            <li>Pillow 边缘漫填抠背景，<strong>只保留连通到画面边缘的部分</strong>——白毛衣才留得住</li>
+            <li>三项自检：去太少 / 去太多 / <strong>四边被判为背景的比例</strong></li>
+            <li>画幅统一是<strong>补边不裁切</strong>，裁切会切掉下摆和肩线</li>
+            <li>正反配对优先认文件名标记，退回排序配对时<strong>明说是猜的</strong></li>
+          </ul></div>
+          <div class="cell"><h4>产出物</h4><p>白底 JPG（可选透明 PNG）+ 写进 <code>brief.json</code> 的 recommendations，路径相对 brief。</p></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="node built">
+      <div class="node-n"><b>07</b><i>COMPOSE</i></div>
+      <div>
+        <div class="node-head"><h3>按模板组稿</h3><span class="src on">build_deck.py</span></div>
+        <div class="node-grid">
+          <div class="cell"><h4>输入</h4><p><code>brief.json</code> + 主管的 <code>.potx</code> 模版。</p></div>
+          <div class="cell"><h4>佘吉动作</h4><ul>
+            <li><code>python-pptx</code> 读模板灌内容，<strong>不新建版式、不改母版</strong></li>
+            <li><strong>首末页原样保留</strong>，内容页在中间增减</li>
+            <li>字体字号取自模板第二页，标题与「Style」框<strong>深拷贝，字节级一致</strong></li>
+            <li>图片重编码成干净基线 JPEG，避免 PowerPoint 修复提示</li>
+          </ul></div>
+          <div class="cell"><h4>产出物</h4><p>可交付 <code>.pptx</code>。<code>check_pptx.py</code> 八项结构检查。</p></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="node">
+      <div class="node-n"><b>08</b><i>LEARN</i></div>
+      <div>
+        <div class="node-head"><h3>复盘沉淀</h3><span class="src">未建 · 非阻塞</span></div>
+        <div class="node-grid">
+          <div class="cell"><h4>输入</h4><p>各关卡的通过/打回记录、客户最终选定方向。</p></div>
+          <div class="cell"><h4>计划动作</h4><ul>
+            <li>回写哪些 prompt 被采纳、哪些被毙、毙稿理由分布</li>
+            <li>更新风格库、prompt 库、主管偏好画像</li>
+            <li>统计各节点耗时与返工次数</li>
+          </ul></div>
+          <div class="cell"><h4>产出物</h4><p>更新后的资产库 + 一页效率复盘。<strong>没有这一节点，第 50 单和第 1 单的准确率完全一样</strong>，「智能」这条指标永远拿不到。</p></div>
+        </div>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <p class="eyebrow">目录约定</p>
+    <h2>主管 → 任务 → 节点，三级</h2>
+  </div>
+  <pre class="tree"><b>projects/</b>
+└── <b>陈主管/</b>                       <i>一级：主管。N 位主管各一个目录</i>
+    └── <b>REQ-2026-0908-SEED/</b>       <i>二级：任务。一位主管可以有多张单</i>
+        ├── <b>00-brief/</b>             <i>intake.json —— 唯一事实来源</i>
+        ├── <b>01-search/</b>            <i>plan.json + picklist-*.md</i>
+        ├── <b>02-assets/</b>            <i>三级：节点</i>
+        │   ├── ledger.json           <i>出处台账（图本身不进 git）</i>
+        │   ├── elevated-everyday/
+        │   │   ├── client/           <i>&lt;渠道&gt;_&lt;哈希&gt;.jpg</i>
+        │   │   └── wgsn/
+        │   └── 待归类/                <i>主管给的图没指方向时落这</i>
+        ├── <b>03-style/</b>             <i>style.json</i>
+        ├── <b>04-prompts/</b>           <i>各工具 prompt 文件</i>
+        ├── <b>06-clean/</b>             <i>去背白底图</i>
+        └── <b>07-deck/</b>              <i>交付 .pptx</i></pre>
+  <p class="lede">主管打包给佘吉时，<strong>文件夹名就是来源渠道</strong>（WGSN导出 / 淘宝 9月 / 小红书笔记 / 客户官网 都认），图片名随便起，佘吉自己改名。佘吉交回去的是<strong>图片文件，不是链接</strong>。</p>
+</section>
+
+<section>
+  <div class="sec-head">
+    <p class="eyebrow">渠道</p>
+    <h2>采集渠道与授权边界</h2>
+    <p class="lede">边界写在配置表里，不在跑的时候临场判断。<strong>不接受用账号密码换取「自动化」</strong>——有账号不等于合规。</p>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th>渠道</th><th>佘吉能做什么</th><th>约束</th><th class="num">配额示例</th></tr></thead>
+    <tbody>
+      <tr><td><strong>客户官网</strong></td><td><span class="pill api">可自动</span></td>
+        <td>客户在售款，用来摸版型、克重、价位——判断新方向能不能落地的基准。<strong>不得把客户现有款当成我们的提案</strong></td><td class="num">24</td></tr>
+      <tr><td><strong>对标品牌官网</strong></td><td><span class="pill api">可自动</span></td>
+        <td>竞品在售款，用来看市场。Sources 页必须注明品牌，<strong>绝不能当原创款给客户</strong></td><td class="num">16</td></tr>
+      <tr><td><strong>Pinterest</strong></td><td><span class="pill api">官方 API</span></td>
+        <td>官方 API <strong>无全站搜索</strong>——人先在画板选片，脚本再拉画板。保留 pin 链接与作者</td><td class="num">21</td></tr>
+      <tr><td><strong>淘宝 / 天猫</strong></td><td><span class="pill man">只出清单</span></td>
+        <td>ToS 禁止抓取，商品图版权属卖家。看市场与供应链。清单用<strong>中文</strong>检索词。公司若有开放平台 appkey 可转 API</td><td class="num">19</td></tr>
+      <tr><td><strong>小红书</strong></td><td><span class="pill man">只出清单</span></td>
+        <td>ToS 禁止抓取，UGC 版权属创作者。看需求端与评论区痛点。<strong>笔记图绝不能进任何交付物</strong></td><td class="num">19</td></tr>
+      <tr><td><strong>WGSN / Fashion Snoops</strong></td><td><span class="pill man">只出清单</span></td>
+        <td>订阅制 + ToS 禁爬 + 具名授权。<strong>不接受账号共享</strong>，由持席位的同事手动导出</td><td class="num">21</td></tr>
+      <tr><td><strong>Instagram</strong></td><td><span class="pill no">不采集</span></td>
+        <td>ToS 禁止抓取。人工刷到的只记链接，不入素材库。用 Pinterest 覆盖</td><td class="num">0</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <p class="eyebrow">工具</p>
+    <h2>生图工具：按授权分工，不是选一个</h2>
+    <p class="lede">调研于 2026-09。<strong>条款会变，赔偿条款按合同走不按官网宣传走</strong>——签约前让法务看一眼。</p>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th>工具</th><th>角色</th><th>接入</th><th>关键事实</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Ideogram</strong></td><td>主力出款图</td><td><span class="pill api">官方 API</span></td>
+        <td>公司已有专业版月付。付费档含商用授权；Character Reference 可拉正反一致性。约 $0.03–0.10/张</td></tr>
+      <tr><td><strong>Adobe Firefly</strong></td><td>交付兜底</td><td><span class="pill api">官方 API</span></td>
+        <td><strong>唯一提供 IP 赔偿的一家</strong>。真正进客户交付页的图用它最稳</td></tr>
+      <tr><td><strong>PatternedAI</strong></td><td>面料花型</td><td><span class="pill semi">人工</span></td>
+        <td>垂直做无缝循环，可矢量化到 SVG 给印花。<strong>这块没有替代品</strong></td></tr>
+      <tr><td><strong>Midjourney</strong></td><td>概念发散</td><td><span class="pill man">人工粘贴</span></td>
+        <td><strong>没有官方 API</strong>。第三方中转与 Discord self-bot 违反双方 ToS，封号是真的</td></tr>
+      <tr><td><strong>即梦 AI</strong></td><td>中文提示词</td><td><span class="pill semi">人工</span></td>
+        <td>授权书可批量下载，对交付实用。API 走火山方舟，接入成本另算。<strong>中文 prompt 生成尚未实现</strong></td></tr>
+      <tr><td><strong>Leonardo 免费档</strong></td><td colspan="2"><span class="pill no">不用</span></td>
+        <td>平台保留对生成图的使用、复制、修改、分发权利，<strong>不能用于客户交付</strong>。要用须上付费档</td></tr>
+      <tr><td><strong>Stable Diffusion 自建</strong></td><td colspan="2"><span class="pill no">暂不</span></td>
+        <td>唯一能完全离线、数据不出公司。要 GPU 与运维，各版本权重商用条款不同（SDXL≠SD3）</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <p class="eyebrow">协同</p>
+    <h2>关卡怎么真正落地</h2>
+    <p class="lede">写一句「需人工确认」是没用的，人会疲劳、会点「都行」。关卡靠三个机械约束撑住。</p>
+  </div>
+  <div class="cards">
+    <div class="card gate"><h3>约束一：动作只有三个</h3>
+      <p><strong>通过 / 打回 / 换方向</strong>。不接受「差不多吧」「你再看着弄」。三选一，佘吉才知道走哪条回退路径。</p></div>
+    <div class="card gate"><h3>约束二：打回带结构化理由</h3>
+      <p>勾选式不写作文：廓形不对 / 颜色不对 / 太商务 / 不像该品牌 / 工艺做不出来。这些勾选项是节点 08 唯一的学习燃料。</p></div>
+    <div class="card gate"><h3>约束三：一屏可审</h3>
+      <p>产出物必须一屏看完且带编号。需要翻文件夹、要放大才能比对的关卡，实际上等于没有关卡。</p></div>
+  </div>
+  <p class="lede">配套看板可<strong>本地部署</strong>（<code>serve.py</code>，纯标准库）：数据不出公司，实时进度 + 素材缩略图，主管浏览器打开即可。<strong>部署那台机器不需要装 Claude</strong>，只要 Python。</p>
+</section>
+
+<section>
+  <div class="sec-head">
+    <p class="eyebrow">红线</p>
+    <h2>这五条写进流程，不是写进备忘录</h2>
+  </div>
+  <div class="redline">
+    <h3>违反任何一条，出事的是公司不是工具</h3>
+    <ol>
+      <li><strong>订阅站与社交平台不做自动抓取。</strong>WGSN / Fashion Snoops / Instagram / 淘宝 / 小红书，ToS 均禁止。佘吉的职责边界到「生成选品清单」为止。<strong>给账号密码不能让这件事变合规</strong>，只是把风险转移到你们账号上。</li>
+      <li><strong>品牌官网图仅作内部参考。</strong>可进灵感页并标注出处，<strong>绝不可出现在交付给客户的原创方案页里</strong>。这是最容易出事也最容易被忽略的一条。</li>
+      <li><strong>小红书笔记图绝不进任何交付物。</strong>个人创作者作品，搬运与洗稿的法律风险是实的。</li>
+      <li><strong>生图工具商用授权逐个确认。</strong>各家条款不同且随订阅等级变化。进交付件的图优先用 Firefly。</li>
+      <li><strong>没查过授权的渠道一律标记。</strong>主管临时给的图若来自未知站点，照收但标 <code>license_checked:false</code>，每次对账都点名，直到有人确认。<strong>没查过 ≠ 能用。</strong></li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <p class="eyebrow">验收</p>
+    <h2>把「快速、准确、智能」换成可量化的数</h2>
+    <p class="lede">原话是三个形容词，没法验收。下面是初版基线，跑满 10 单后按实际数据回调。</p>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th>维度</th><th>指标</th><th class="num">建议基线</th><th class="num">采集节点</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="2"><strong>快速</strong></td><td>需求下达 → 首版联系表</td><td class="num">≤ 2 小时</td><td class="num">00 → 02</td></tr>
+      <tr><td>需求下达 → 终版 PPT</td><td class="num">≤ 1 个工作日</td><td class="num">00 → 07</td></tr>
+      <tr><td rowspan="2"><strong>准确</strong></td><td>联系表首轮采纳率</td><td class="num">≥ 50%</td><td class="num">主关卡 ②</td></tr>
+      <tr><td>PPT 终审返工次数</td><td class="num">≤ 1 次</td><td class="num">主关卡 ③</td></tr>
+      <tr><td rowspan="2"><strong>智能</strong></td><td>风格要素人工修正率</td><td class="num">≤ 20%</td><td class="num">节点 03</td></tr>
+      <tr><td>prompt 命中历史库比例</td><td class="num">≥ 30%</td><td class="num">节点 04</td></tr>
+      <tr><td><strong>兜底</strong></td><td>每节点存在人工接管路径</td><td class="num">100%</td><td class="num">全部</td></tr>
+    </tbody>
+  </table></div>
+  <p class="lede"><strong>时间表说明</strong>：佘吉侧各步骤是分钟级，但三个人工渠道（WGSN / 淘宝 / 小红书）的选片是<strong>排给人的任务</strong>，Midjourney 也需人工粘贴。排期时这几段按人工节奏算，不能当成能与自动渠道并行的分钟级工作——这是 V2.0「约 1 小时全自动」那个数被推翻的原因。</p>
+</section>
+
+<section>
+  <div class="sec-head">
+    <p class="eyebrow">下一步</p>
+    <h2>还差两个节点</h2>
+  </div>
+  <div class="cards">
+    <div class="card run"><h3>节点 05 批量生成</h3>
+      <p>先只接 Ideogram 官方 API（已有专业版），Midjourney 保持人工粘贴 + 结果回灌。两拍式：先 4 张试水再放量。</p></div>
+    <div class="card run"><h3>节点 08 复盘沉淀</h3>
+      <p>把各关卡的通过/打回记录回流，喂风格库与偏好画像。非阻塞，但没有它「智能」这条指标永远拿不到。</p></div>
+    <div class="card warn"><h3>待办：真图实测</h3>
+      <p>目前 01→04 只用合成样例图跑过一轮。<strong>真图进来后需重跑</strong>：配色要重算，风格要素六项要看图重填。</p></div>
+  </div>
+</section>
+
+<footer>
+  <span>设计工作流 V3.0</span>
+  <span>2026-09-11</span>
+  <span>合并自：佘吉设计工作流 V1 + 外贸设计开发流程 V2.0（两份旧稿作废）</span>
+  <span>9 节点建成 7</span>
+</footer>
+
+</div>
