@@ -486,6 +486,31 @@ a{color:var(--run)}
 
 <section>
   <div class="sec-head">
+    <p class="eyebrow">治理</p>
+    <h2>数据以 git 仓库为准</h2>
+    <p class="lede">2026-09-11 用户决定。多个会话、多个工具同时在做这个项目时，必须有一处是权威的，否则状态一定分叉。</p>
+  </div>
+  <div class="cards">
+    <div class="card run"><h3>权威数据层：git 仓库</h3>
+      <p><code>projects/&lt;主管&gt;/&lt;任务&gt;/</code> 下的那串 JSON 就是事实。<code>intake.json → plan.json → ledger.json → style.json → prompts.json → brief.json</code>，每个节点读上一个的产出。</p></div>
+    <div class="card run"><h3>为什么不是 artifact 数据库</h3>
+      <p>artifact 删了数据就没了，也没有历史。<strong>审批留痕靠 git commit</strong>——谁在什么时候改了什么，改不掉、赖不掉。这是审批流程必须有的东西。</p></div>
+    <div class="card warn"><h3>界面层：读写仓库，不另存一份</h3>
+      <p>看板与协同工具是<strong>入口</strong>，不是数据源。<code>serve.py</code> 已经这么做：本地起服务，直接读 <code>projects/</code>。任何工具自建一份状态，两边一定分叉。</p></div>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th>数据</th><th>存在哪</th><th>权威</th></tr></thead>
+    <tbody>
+      <tr><td>需求单、检索方案、台账、风格表、prompt、交付清单</td><td class="num">git · projects/</td><td><strong>是</strong></td></tr>
+      <tr><td>审批留痕（谁批的、批的什么、何时失效）</td><td class="num">git · plan.json 的 approval / approval_history</td><td><strong>是</strong></td></tr>
+      <tr><td>素材图本身</td><td class="num">本地磁盘 / NAS（不进 git，几个 G）</td><td>靠 ledger.json <code>--check</code> 对账</td></tr>
+      <tr><td>看板上的关卡签字、留言</td><td class="num">artifact db（board/state）</td><td>否 —— 便利性质，认不到人头</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sec-head">
     <p class="eyebrow">渠道</p>
     <h2>采集渠道与授权边界</h2>
     <p class="lede">边界写在配置表里，不在跑的时候临场判断。<strong>不接受用账号密码换取「自动化」</strong>——有账号不等于合规。</p>

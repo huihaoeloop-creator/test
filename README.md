@@ -134,6 +134,14 @@ SLA does not survive three manual channels, Midjourney has no API so Ideogram
 is the workhorse, background removal is Pillow rather than rembg, and there are
 three review gates rather than eight.
 
+**The git repository is the authoritative data layer** (decided 2026-09-11). The
+JSON chain under `projects/<supervisor>/<request>/` is the state — intake, plan,
+ledger, style, prompts, brief — and approvals live in `plan.json` alongside what
+superseded them. An artifact database has no history and disappears with the
+artifact; a review trail has to be auditable, so it goes through git commits.
+Boards and collaboration tools are entry points that read and write the
+repository (`serve.py` does this) and must not keep a second copy of the state.
+
 Scripts for the design-request pipeline, one per workflow node. Each writes a
 JSON artefact the next node reads, and each stops for human review — nothing
 advances a node on its own.
